@@ -5,8 +5,7 @@
 ## Features
 * Implements all known Pokémon Go API calls <sub>(Not all of them tested though)</sub>
 * Uses ES6 Promises
-* Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) login client
-* Includes Google login client
+* Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) and Google login clients
 * Optional batch mode to group several requests in one RPC call
 
 ## Acknowledgements
@@ -189,6 +188,16 @@ received from the server (mostly for debugging purposes).
 #### `useItemPotion(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemRevive(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemXPBoost(itemID)` ⇒ <code>Promise</code>
+
+## `pogobuf.GoogleLogin` methods
+#### `login(username, password)` ⇒ <code>Promise</code>
+Performs the Google login process and returns a Promise that will be resolved with the
+auth token.
+
+| Param | Type |
+| --- | --- |
+| username | <code>string</code> |
+| password | <code>string</code> |
 
 ## `pogobuf.PTCLogin` methods
 #### `login(username, password)` ⇒ <code>Promise</code>
