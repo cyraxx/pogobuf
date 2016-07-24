@@ -5,7 +5,7 @@
 ## Features
 * Implements all known Pokémon Go API calls <sub>(Not all of them tested though)</sub>
 * Uses ES6 Promises
-* Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) login client <sub>(Google login not yet implemented)</sub>
+* Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) and Google login clients
 * Optional batch mode to group several requests in one RPC call
 
 ## Acknowledgements
@@ -21,7 +21,7 @@ Generally, every method that makes an API call returns an ES6 Promise that will 
 
 Before using a `pogobuf.Client` instance to make API calls you need to supply it with an auth token (which you can get from the `pogobuf.PTCLogin` class) and call `init()` to make an initial request.
 
-Example usage:
+Example usage using PTC:
 
 ```javascript
 const pogobuf = require('pogobuf');
@@ -32,6 +32,27 @@ var login = new pogobuf.PTCLogin(),
 login.login('username', 'password')
 .then(token => {
     client.setAuthInfo('ptc', token);
+    client.setPosition(lat, lng);
+    return client.init();
+}).then(() => {
+    // Make some API calls!
+    return client.getInventory(0);
+}).then(inventory => {
+    // Use the returned data
+});
+```
+
+Example usage using Google:
+
+```javascript
+const pogobuf = require('pogobuf');
+
+var login = new pogobuf.GoogleLogin(),
+    client = new pogobuf.Client();
+
+login.login('username', 'password')
+.then(token => {
+    client.setAuthInfo('google', token);
     client.setPosition(lat, lng);
     return client.init();
 }).then(() => {
@@ -167,6 +188,16 @@ received from the server (mostly for debugging purposes).
 #### `useItemPotion(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemRevive(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemXPBoost(itemID)` ⇒ <code>Promise</code>
+
+## `pogobuf.GoogleLogin` methods
+#### `login(username, password)` ⇒ <code>Promise</code>
+Performs the Google login process and returns a Promise that will be resolved with the
+auth token.
+
+| Param | Type |
+| --- | --- |
+| username | <code>string</code> |
+| password | <code>string</code> |
 
 ## `pogobuf.PTCLogin` methods
 #### `login(username, password)` ⇒ <code>Promise</code>

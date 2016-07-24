@@ -1,33 +1,34 @@
 {
-    "name": "pogobuf",
-    "version": "1.0.0",
-    "description": "Pokémon Go Client Library",
-    "main": "pogobuf/pogobuf.js",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/cyraxx/pogobuf.git"
-    },
-    "keywords": [
-        "pokemon",
-        "pokemongo",
-        "pogo",
-        "api",
-        "niantic"
-    ],
-    "author": "Andreas Reich (https://github.com/cyraxx)",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/cyraxx/pogobuf/issues"
-    },
-    "homepage": "https://github.com/cyraxx/pogobuf#readme",
-    "engines": {
-        "node": ">=4.0.0"
-    },
-    "dependencies": {
-        "node-pogo-protos": "^1.0.1",
-        "request": "^2.73.0"
-    }
+  "name": "pogobuf",
+  "version": "1.1.0",
+  "description": "Pokémon Go Client Library",
+  "main": "pogobuf/pogobuf.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyraxx/pogobuf.git"
+  },
+  "keywords": [
+    "pokemon",
+    "pokemongo",
+    "pogo",
+    "api",
+    "niantic"
+  ],
+  "author": "Andreas Reich (https://github.com/cyraxx)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cyraxx/pogobuf/issues"
+  },
+  "homepage": "https://github.com/cyraxx/pogobuf#readme",
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "dependencies": {
+    "gpsoauthnode": "0.0.5",
+    "node-pogo-protos": "^1.0.1",
+    "request": "^2.73.0"
+  }
 }

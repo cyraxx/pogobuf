@@ -6,5 +6,6 @@
  */
 module.exports = {
     Client: require('./pogobuf.client.js'),
-    PTCLogin: require('./pogobuf.ptclogin.js')
+    PTCLogin: require('./pogobuf.ptclogin.js'),
+    GoogleLogin: require('./pogobuf.googlelogin.js')
 };
