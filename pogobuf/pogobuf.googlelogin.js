@@ -7,6 +7,9 @@ const GoogleOAuth = require('gpsoauthnode'),
  * @memberof pogobuf
  */
 function GoogleLogin() {
+    if (!(this instanceof GoogleLogin)) {
+        return new GoogleLogin()
+    }
     const self = this;
 
     /**
