@@ -14,14 +14,14 @@
 
 ## Usage
 ### Installation
-`npm install pogobuf`
+`npm install pogobuf --save`
 
 ### Basic Usage
 Generally, every method that makes an API call returns an ES6 Promise that will be resolved with the response message object (or `true` if there was no response message).
 
-Before using a `pogobuf.Client` instance to make API calls you need to supply it with an auth token (which you can get from the `pogobuf.PTCLogin` class) and call `init()` to make an initial request.
+Before using a `pogobuf.Client` instance to make API calls you need to supply it with an auth token (which you can get from the `pogobuf.PTCLogin` or `pogobuf.GoogleLogin` class) and call `init()` to make an initial request.
 
-Example usage using PTC:
+Example usage with PTC login:
 
 ```javascript
 const pogobuf = require('pogobuf');
@@ -42,7 +42,7 @@ login.login('username', 'password')
 });
 ```
 
-Example usage using Google:
+Example usage with Google login:
 
 ```javascript
 const pogobuf = require('pogobuf');
