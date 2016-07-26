@@ -11,6 +11,9 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
  * @memberof pogobuf
  */
 function Client() {
+    if (!(this instanceof Client)) {
+          return new Client()
+    }
     const self = this;
 
     /****** PUBLIC METHODS ******/
