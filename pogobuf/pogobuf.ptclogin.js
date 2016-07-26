@@ -9,7 +9,7 @@ const request = require('request'),
  */
 function PTCLogin() {
     if (!(this instanceof PTCLogin)) {
-        return new PTCLogin()
+        return new PTCLogin();
     }
     const self = this;
 

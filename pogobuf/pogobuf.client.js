@@ -12,7 +12,7 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
  */
 function Client() {
     if (!(this instanceof Client)) {
-          return new Client()
+        return new Client();
     }
     const self = this;
 

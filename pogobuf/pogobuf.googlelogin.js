@@ -8,7 +8,7 @@ const GoogleOAuth = require('gpsoauthnode'),
  */
 function GoogleLogin() {
     if (!(this instanceof GoogleLogin)) {
-        return new GoogleLogin()
+        return new GoogleLogin();
     }
     const self = this;
 
