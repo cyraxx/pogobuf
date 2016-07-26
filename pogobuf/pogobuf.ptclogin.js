@@ -8,6 +8,9 @@ const request = require('request'),
  * @memberof pogobuf
  */
 function PTCLogin() {
+    if (!(this instanceof PTCLogin)) {
+        return new PTCLogin()
+    }
     const self = this;
 
     this.request = request.defaults({
