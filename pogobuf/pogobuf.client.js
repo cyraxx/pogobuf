@@ -769,10 +769,9 @@ function Client() {
      * Executes an RPC call with the given list of requests.
      * @private
      * @param {Object[]} requests
-     * @param {boolean} [false] ignoreReponse - Do not try to parse the response messages
      * @return {Promise} - A Promise that will be resolved with the (list of) response messages, or true if there aren't any
      */
-    this.callRPC = function(requests, ignoreResponse) {
+    this.callRPC = function(requests) {
         return new Promise((resolve, reject) => {
             var envelope;
 
@@ -783,7 +782,7 @@ function Client() {
                 return;
             }
 
-            if (typeof self.requestCallback == 'function') self.requestCallback(envelope);
+            if (typeof self.requestCallback === 'function') self.requestCallback(envelope);
 
             self.request({
                 method: 'POST',
@@ -795,8 +794,8 @@ function Client() {
                     return;
                 }
 
-                if (response.statusCode != 200) {
-                    reject(Error('Status code ' + response.statusCode + ' received from RPC'));
+                if (response.statusCode !== 200) {
+                    reject(Error('Status code ' + response.statusCode + ' received from HTTPS request'));
                     return;
                 }
 
@@ -812,26 +811,40 @@ function Client() {
                     }
                 }
 
-                if (typeof self.responseCallback == 'function') self.responseCallback(responseEnvelope);
+                if (typeof self.responseCallback === 'function') self.responseCallback(responseEnvelope);
+
+                if (responseEnvelope.error) {
+                    reject(Error(responseEnvelope.error));
+                    return;
+                }
+                
+                if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
+                
+                if (self.endpoint === 'https://pgorelease.nianticlabs.com/plfe/rpc') {
+                  if (responseEnvelope.status_code !== 53) {
+                    reject(Error('Fetching RPC endpoint failed, received staus code ' + responseEnvelope.status_code));
+                    return;
+                  }
+                  
+                  if (!responseEnvelope.api_url) {
+                    reject(Error('Fetching RPC endpoint failed, none supplied in response'));
+                    return;
+                  }
+                  
+                  self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
+                  
+                  return this.callRPC(requests);
+                }
 
                 if (responseEnvelope.status_code !== 2) {
                     reject(Error('Status code ' + responseEnvelope.status_code + ' received from RPC'));
                     return;
                 }
 
-                if (responseEnvelope.error) {
-                    reject(Error(responseEnvelope.error));
-                    return;
-                }
-
-                if (responseEnvelope.api_url) self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
-
-                if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
-
                 var responses = [];
 
-                if (requests && !ignoreResponse) {
-                    if (requests.length != responseEnvelope.returns.length) {
+                if (requests) {
+                    if (requests.length !== responseEnvelope.returns.length) {
                         reject(Error("Request count does not match response count"));
                         return;
                     }
@@ -853,7 +866,7 @@ function Client() {
                 }
 
                 if (!responses.length) resolve(true);
-                else if (responses.length == 1) resolve(responses[0]);
+                else if (responses.length === 1) resolve(responses[0]);
                 else resolve(responses);
             });
         });
