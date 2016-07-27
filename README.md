@@ -65,7 +65,7 @@ login.login('username', 'password')
 });
 ```
 
-See the API documentation below, or [example.js](https://github.com/cyraxx/pogobuf/blob/master/example.js) for a more sophisticated example that does something useful.
+For more details, see the API documentation below or [the example scripts](https://github.com/cyraxx/pogobuf/blob/master/examples).
 
 ### Batch mode
 The Pokémon Go API offers the ability to send multiple requests in one call. To do this you can use pogobuf's batch mode:
@@ -210,3 +210,21 @@ auth token.
 | --- | --- |
 | username | <code>string</code> |
 | password | <code>string</code> |
+
+## `pogobuf.Utils` methods
+### `splitInventory(inventory)` ⇒ <code>object</code> *(static)*
+Takes a `getInventory()` response and separates it into pokemon, items, candies, player
+data, eggs, and pokedex.
+
+| Param | Type | Description |
+| --- | --- |
+| inventory | <code>object</code> | API response message as returned by `getInventory()`
+
+### `getEnumKeyByValue(enumObj, val)` ⇒ <code>string</code> *(static)*
+Utility method that finds the name of the key for a given enum value and makes it
+look a little nicer.
+
+| Param | Type |
+| --- | --- |
+| enumObj | <code>object</code> |
+| val | <code>number</code> |
