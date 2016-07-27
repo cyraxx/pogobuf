@@ -210,3 +210,12 @@ auth token.
 | --- | --- |
 | username | <code>string</code> |
 | password | <code>string</code> |
+
+## `pogobuf.Utils` methods
+### `splitInventory(inventory)` ⇒ <code>object</code>
+Takes a `getInventory()` response and separates it into pokemon, items, candies, player
+data, eggs, and pokedex.
+
+| Param | Type | Description |
+| --- | --- |
+| inventory | <code>object</code> |API response message as returned by `getInventory()`
