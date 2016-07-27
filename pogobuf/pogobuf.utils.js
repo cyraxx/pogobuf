@@ -85,7 +85,9 @@ module.exports = {
     getEnumKeyByValue: function(enumObj, val) {
         for (var key of Object.keys(enumObj)) {
             if (enumObj[key] === val)
-                return key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+                return key.split('_')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
         }
         return null;
     }
