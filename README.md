@@ -217,8 +217,8 @@ Takes a `getInventory()` response and separates it into pokemon, items, candies,
 data, eggs, and pokedex.
 
 | Param | Type | Description |
-| --- | --- |
-| inventory | <code>object</code> | API response message as returned by `getInventory()`
+| --- | --- | --- |
+| inventory | <code>object</code> | API response message as returned by `getInventory()` |
 
 ### `getEnumKeyByValue(enumObj, val)` ⇒ <code>string</code> *(static)*
 Utility method that finds the name of the key for a given enum value and makes it
