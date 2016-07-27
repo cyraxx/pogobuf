@@ -65,7 +65,7 @@ login.login('username', 'password')
 });
 ```
 
-See the API documentation below, or [example.js](https://github.com/cyraxx/pogobuf/blob/master/example.js) for a more sophisticated example that does something useful.
+For more details, see the API documentation below or [the example scripts](https://github.com/cyraxx/pogobuf/blob/master/examples).
 
 ### Batch mode
 The Pokémon Go API offers the ability to send multiple requests in one call. To do this you can use pogobuf's batch mode:
