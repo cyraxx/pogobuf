@@ -814,6 +814,11 @@ function Client() {
 
                 if (typeof self.responseCallback == 'function') self.responseCallback(responseEnvelope);
 
+                if (responseEnvelope.status_code !== 2) {
+                    reject(Error('Status code ' + responseEnvelope.status_code + ' received from RPC'));
+                    return;
+                }
+
                 if (responseEnvelope.error) {
                     reject(Error(responseEnvelope.error));
                     return;
