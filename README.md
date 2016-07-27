@@ -212,10 +212,19 @@ auth token.
 | password | <code>string</code> |
 
 ## `pogobuf.Utils` methods
-### `splitInventory(inventory)` ⇒ <code>object</code>
+### `splitInventory(inventory)` ⇒ <code>object</code> *(static)*
 Takes a `getInventory()` response and separates it into pokemon, items, candies, player
 data, eggs, and pokedex.
 
 | Param | Type | Description |
 | --- | --- |
-| inventory | <code>object</code> |API response message as returned by `getInventory()`
+| inventory | <code>object</code> | API response message as returned by `getInventory()`
+
+### `getEnumKeyByValue(enumObj, val)` ⇒ <code>string</code> *(static)*
+Utility method that finds the name of the key for a given enum value and makes it
+look a little nicer.
+
+| Param | Type |
+| --- | --- |
+| enumObj | <code>object</code> |
+| val | <code>number</code> |
