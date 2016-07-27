@@ -254,7 +254,7 @@ function Client() {
                 player_latitude: self.playerLatitude,
                 player_longitude: self.playerLongitude
             }),
-            responseType: Response.FortDeployPokemonResponse
+            responseType: Responses.FortDeployPokemonResponse
         });
     };
 
@@ -267,7 +267,7 @@ function Client() {
                 player_latitude: self.playerLatitude,
                 player_longitude: self.playerLongitude
             }),
-            responseType: Response.FortRecallPokemonResponse
+            responseType: Responses.FortRecallPokemonResponse
         });
     };
 
@@ -277,7 +277,7 @@ function Client() {
             message: new RequestMessages.ReleasePokemonMessage({
                 pokemon_id: pokemonID
             }),
-            responseType: Response.ReleasePokemonResponse
+            responseType: Responses.ReleasePokemonResponse
         });
     };
 
@@ -823,7 +823,7 @@ function Client() {
 
                 if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
-                responses = [];
+                var responses = [];
 
                 if (requests && !ignoreResponse) {
                     if (requests.length != responseEnvelope.returns.length) {
