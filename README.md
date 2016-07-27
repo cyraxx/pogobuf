@@ -184,7 +184,7 @@ received from the server (mostly for debugging purposes).
 #### `startGymBattle(gymID, attackingPokemonIDs, defendingPokemonID)` ⇒ <code>Promise</code>
 #### `upgradePokemon(pokemonID)` ⇒ <code>Promise</code>
 #### `useIncense(itemID)` ⇒ <code>Promise</code>
-#### `useItemCapture(itemID, encounterID, spawnPointGUID)` ⇒ <code>Promise</code>
+#### `useItemCapture(itemID, encounterID, spawnPointID)` ⇒ <code>Promise</code>
 #### `useItemEggIncubator(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemGym(itemID, gymID)` ⇒ <code>Promise</code>
 #### `useItemPotion(itemID, pokemonID)` ⇒ <code>Promise</code>
