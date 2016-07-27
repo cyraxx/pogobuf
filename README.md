@@ -1,6 +1,8 @@
 # pogobuf, a Pokémon Go Client Library for node.js
 [![npm version](https://badge.fury.io/js/pogobuf.svg)](https://badge.fury.io/js/pogobuf)
+![npm downloads](https://img.shields.io/npm/dt/pogobuf.svg)
 ![dependencies](https://david-dm.org/cyraxx/pogobuf.svg)
+![license](https://img.shields.io/npm/l/pogobuf.svg)
 
 ## Features
 * Implements all known Pokémon Go API calls <sub>(Not all of them tested though)</sub>
