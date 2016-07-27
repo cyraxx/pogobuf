@@ -72,5 +72,21 @@ module.exports = {
             egg_incubators: egg_incubators,
             candies: candies
         };
+    },
+
+    /**
+     * Utility method that finds the name of the key for a given enum value and makes it
+     * look a little nicer.
+     * @param {object} enumObj
+     * @param {number} val
+     * @returns {string}
+     * @static
+     */
+    getEnumKeyByValue: function(enumObj, val) {
+        for (var key of Object.keys(enumObj)) {
+            if (enumObj[key] === val)
+                return key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+        }
+        return null;
     }
 };
