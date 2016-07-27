@@ -15,7 +15,7 @@ const login = pogobuf.GoogleLogin(),
 login.login('your-username@gmail.com', 'your-google-password')
     .then(token => {
         // Initialize the client
-        client.setAuthInfo('ptc', token);
+        client.setAuthInfo('google', token);
         client.setPosition(lat, lng);
 
         // Uncomment the following if you want to see every request/response on the console
