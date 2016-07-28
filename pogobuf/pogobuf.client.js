@@ -796,8 +796,6 @@ function Client() {
                 return;
             }
 
-            if (typeof self.requestCallback === 'function') self.requestCallback(envelope);
-
             self.request({
                 method: 'POST',
                 url: self.endpoint,
@@ -817,6 +815,7 @@ function Client() {
                 try {
                     responseEnvelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
                 } catch (e) {
+                    self.emit('parse-envelope-error', body, e);
                     if (e.decoded) {
                         responseEnvelope = e.decoded;
                     } else {
@@ -877,7 +876,7 @@ function Client() {
                         try {
                             responseMessage = requests[i].responseType.decode(responseEnvelope.returns[i]);
                         } catch (e) {
-                            self.emit('parse-response-error', responseEnvelope, e);
+                            self.emit('parse-response-error', responseEnvelope.returns[i].toBuffer(), e);
                             reject(e);
                             return;
                         }
