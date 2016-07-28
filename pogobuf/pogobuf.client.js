@@ -1,9 +1,13 @@
-const POGOProtos = require('node-pogo-protos'),
+const EventEmitter = require('events').EventEmitter,
+    POGOProtos = require('node-pogo-protos'),
+    Utils = require('./pogobuf.utils.js'),
     request = require('request');
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
+
+const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
 
 /**
  * Pokémon Go RPC client.
@@ -11,6 +15,9 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
  * @memberof pogobuf
  */
 function Client() {
+    if (!(this instanceof Client)) {
+        return new Client();
+    }
     const self = this;
 
     /****** PUBLIC METHODS ******/
@@ -32,10 +39,12 @@ function Client() {
      * probably want to call {@link #updatePlayer}.
      * @param {number} latitude - The player's latitude
      * @param {number} longitude - The player's longitude
+     * @param {number} [altitude=0] - The player's altitude
      */
-    this.setPosition = function(latitude, longitude) {
+    this.setPosition = function(latitude, longitude, altitude) {
         self.playerLatitude = latitude;
         self.playerLongitude = longitude;
+        self.playerAltitude = altitude || 0;
     };
 
     /**
@@ -43,26 +52,19 @@ function Client() {
      * @return {Promise}
      */
     this.init = function() {
-        /* The response to the first RPC call does not contain any response messages even though
-           the envelope includes requests so we set ignoreResponse=true to avoid a validation error.
-           The response-less envelope also contains a status_code of 53 - it's possible that this
-           instructs the client to re-send the requests to the new API endpoint. For now, we just
-           ignore the first response and move on.
-           These requests are merely included because the game does the same. */
-        return self.callRPC([{
-            type: RequestType.GET_PLAYER
-        }, {
-            type: RequestType.GET_HATCHED_EGGS
-        }, {
-            type: RequestType.GET_INVENTORY
-        }, {
-            type: RequestType.CHECK_AWARDED_BADGES
-        }, {
-            type: RequestType.DOWNLOAD_SETTINGS,
-            message: new RequestMessages.DownloadSettingsMessage({
-                hash: '05daf51635c82611d1aac95c0b051d3ec088a930'
-            })
-        }], true);
+        /*
+            The response to the first RPC call does not contain any response messages even though
+            the envelope includes requests, technically it wouldn't be necessary to send the requests
+            but the app does the same. The call will then automatically be resent to the new API
+            endpoint by callRPC().
+        */
+        return self.batchStart()
+            .getPlayer()
+            .getHatchedEggs()
+            .getInventory(0)
+            .checkAwardedBadges()
+            .downloadSettings('05daf51635c82611d1aac95c0b051d3ec088a930')
+            .batchCall();
     };
 
     /**
@@ -98,19 +100,21 @@ function Client() {
     /**
      * Sets a callback to be called for any envelope or request just before it is sent to
      * the server (mostly for debugging purposes).
+     * @deprecated Use the raw-request event instead
      * @param {function} callback
      */
     this.setRequestCallback = function(callback) {
-        self.requestCallback = callback;
+        self.on('raw-request', callback);
     };
 
     /**
      * Sets a callback to be called for any envelope or response just after it has been
      * received from the server (mostly for debugging purposes).
+     * @deprecated Use the raw-response event instead
      * @param {function} callback
      */
     this.setResponseCallback = function(callback) {
-        self.responseCallback = callback;
+        self.on('raw-response', callback);
     };
 
     /****** API CALLS (in order of RequestType enum) ******/
@@ -251,7 +255,7 @@ function Client() {
                 player_latitude: self.playerLatitude,
                 player_longitude: self.playerLongitude
             }),
-            responseType: Response.FortDeployPokemonResponse
+            responseType: Responses.FortDeployPokemonResponse
         });
     };
 
@@ -264,7 +268,7 @@ function Client() {
                 player_latitude: self.playerLatitude,
                 player_longitude: self.playerLongitude
             }),
-            responseType: Response.FortRecallPokemonResponse
+            responseType: Responses.FortRecallPokemonResponse
         });
     };
 
@@ -274,7 +278,7 @@ function Client() {
             message: new RequestMessages.ReleasePokemonMessage({
                 pokemon_id: pokemonID
             }),
-            responseType: Response.ReleasePokemonResponse
+            responseType: Responses.ReleasePokemonResponse
         });
     };
 
@@ -289,13 +293,13 @@ function Client() {
         });
     };
 
-    this.useItemCapture = function(itemID, encounterID, spawnPointGUID) {
+    this.useItemCapture = function(itemID, encounterID, spawnPointID) {
         return self.callOrChain({
             type: RequestType.USE_ITEM_CAPTURE,
             message: new RequestMessages.UseItemCaptureMessage({
                 item_id: itemID,
                 encounter_id: encounterID,
-                spawn_point_guid: spawnPointGUID
+                spawn_point_id: spawnPointID
             }),
             responseType: Responses.UseItemCaptureResponse
         });
@@ -698,7 +702,7 @@ function Client() {
         encoding: null
     });
 
-    this.endpoint = 'https://pgorelease.nianticlabs.com/plfe/rpc';
+    this.endpoint = INITIAL_ENDPOINT;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -731,6 +735,7 @@ function Client() {
 
         if (self.playerLatitude) envelopeData.latitude = self.playerLatitude;
         if (self.playerLongitude) envelopeData.longitude = self.playerLongitude;
+        if (self.playerAltitude) envelopeData.altitude = self.playerAltitude;
 
         if (self.authTicket) {
             envelopeData.auth_ticket = self.authTicket;
@@ -747,17 +752,29 @@ function Client() {
         }
 
         if (requests) {
+            self.emit('request', {
+                request_id: envelopeData.request_id,
+                requests: requests.map(r => ({
+                    name: Utils.getEnumKeyByValue(RequestType, r.type),
+                    type: r.type,
+                    data: r.message
+                }))
+            });
+
             envelopeData.requests = requests.map(r => {
                 var request = {
                     request_type: r.type
                 };
+
                 if (r.message) {
                     request.request_message = r.message.encode();
-                    if (typeof self.requestCallback == 'function') self.requestCallback(r.message);
                 }
+
                 return request;
             });
         }
+
+        self.emit('raw-request', envelopeData);
 
         return new POGOProtos.Networking.Envelopes.RequestEnvelope(envelopeData);
     };
@@ -766,10 +783,9 @@ function Client() {
      * Executes an RPC call with the given list of requests.
      * @private
      * @param {Object[]} requests
-     * @param {boolean} [false] ignoreReponse - Do not try to parse the response messages
      * @return {Promise} - A Promise that will be resolved with the (list of) response messages, or true if there aren't any
      */
-    this.callRPC = function(requests, ignoreResponse) {
+    this.callRPC = function(requests) {
         return new Promise((resolve, reject) => {
             var envelope;
 
@@ -779,8 +795,6 @@ function Client() {
                 reject(e);
                 return;
             }
-
-            if (typeof self.requestCallback == 'function') self.requestCallback(envelope);
 
             self.request({
                 method: 'POST',
@@ -792,8 +806,8 @@ function Client() {
                     return;
                 }
 
-                if (response.statusCode != 200) {
-                    reject(Error('Status code ' + response.statusCode + ' received from RPC'));
+                if (response.statusCode !== 200) {
+                    reject(Error('Status code ' + response.statusCode + ' received from HTTPS request'));
                     return;
                 }
 
@@ -801,6 +815,7 @@ function Client() {
                 try {
                     responseEnvelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
                 } catch (e) {
+                    self.emit('parse-envelope-error', body, e);
                     if (e.decoded) {
                         responseEnvelope = e.decoded;
                     } else {
@@ -809,21 +824,47 @@ function Client() {
                     }
                 }
 
-                if (typeof self.responseCallback == 'function') self.responseCallback(responseEnvelope);
+                self.emit('raw-response', responseEnvelope);
 
                 if (responseEnvelope.error) {
                     reject(Error(responseEnvelope.error));
                     return;
                 }
 
-                if (responseEnvelope.api_url) self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
-
                 if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
-                responses = [];
+                if (self.endpoint === INITIAL_ENDPOINT) {
+                    /* status_code 102 seems to be invalid auth token, could use later when caching token. */
+                    if (responseEnvelope.status_code !== 53) {
+                        reject(Error('Fetching RPC endpoint failed, received staus code ' + responseEnvelope.status_code));
+                        return;
+                    }
 
-                if (requests && !ignoreResponse) {
-                    if (requests.length != responseEnvelope.returns.length) {
+                    if (!responseEnvelope.api_url) {
+                        reject(Error('Fetching RPC endpoint failed, none supplied in response'));
+                        return;
+                    }
+
+                    self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
+
+                    self.emit('endpoint-response', {
+                        status_code: responseEnvelope.status_code,
+                        request_id: responseEnvelope.request_id.toString(),
+                        api_url: responseEnvelope.api_url
+                    });
+
+                    return resolve(this.callRPC(requests));
+                }
+
+                if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
+                    reject(Error('Status code ' + responseEnvelope.status_code + ' received from RPC'));
+                    return;
+                }
+
+                var responses = [];
+
+                if (requests) {
+                    if (requests.length !== responseEnvelope.returns.length) {
                         reject(Error("Request count does not match response count"));
                         return;
                     }
@@ -835,21 +876,33 @@ function Client() {
                         try {
                             responseMessage = requests[i].responseType.decode(responseEnvelope.returns[i]);
                         } catch (e) {
+                            self.emit('parse-response-error', responseEnvelope.returns[i].toBuffer(), e);
                             reject(e);
                             return;
                         }
 
-                        if (typeof self.responseCallback == 'function') self.responseCallback(responseMessage);
                         responses.push(responseMessage);
                     }
                 }
 
+                self.emit('response', {
+                    status_code: responseEnvelope.status_code,
+                    request_id: responseEnvelope.request_id.toString(),
+                    responses: responses.map((r, i) => ({
+                        name: Utils.getEnumKeyByValue(RequestType, requests[i].type),
+                        type: requests[i].type,
+                        data: r
+                    }))
+                });
+
                 if (!responses.length) resolve(true);
-                else if (responses.length == 1) resolve(responses[0]);
+                else if (responses.length === 1) resolve(responses[0]);
                 else resolve(responses);
             });
         });
     };
 }
+
+Client.prototype = Object.create(EventEmitter.prototype);
 
 module.exports = Client;

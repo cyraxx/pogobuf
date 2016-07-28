@@ -7,6 +7,9 @@ const GoogleOAuth = require('gpsoauthnode'),
  * @memberof pogobuf
  */
 function GoogleLogin() {
+    if (!(this instanceof GoogleLogin)) {
+        return new GoogleLogin();
+    }
     const self = this;
 
     /**
@@ -42,7 +45,7 @@ function GoogleLogin() {
         return new Promise((resolve, reject) => {
             google.login(username, password, GOOGLE_LOGIN_ANDROID_ID, (err, data) => {
                 if (err) {
-                    reject(Error(err));
+                    reject(Error(err.response.statusCode + ': ' + err.response.statusMessage));
                     return;
                 }
 
@@ -62,7 +65,7 @@ function GoogleLogin() {
         return new Promise((resolve, reject) => {
             google.oauth(username, loginData.masterToken, loginData.androidId, GOOGLE_LOGIN_SERVICE, GOOGLE_LOGIN_APP, GOOGLE_LOGIN_CLIENT_SIG, (err, data) => {
                 if (err) {
-                    reject(Error(err));
+                    reject(Error(err.response.statusCode + ': ' + err.response.statusMessage));
                     return;
                 }
 

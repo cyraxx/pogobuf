@@ -1,6 +1,8 @@
 # pogobuf, a Pokémon Go Client Library for node.js
 [![npm version](https://badge.fury.io/js/pogobuf.svg)](https://badge.fury.io/js/pogobuf)
+![npm downloads](https://img.shields.io/npm/dt/pogobuf.svg)
 ![dependencies](https://david-dm.org/cyraxx/pogobuf.svg)
+![license](https://img.shields.io/npm/l/pogobuf.svg)
 
 ## Features
 * Implements all known Pokémon Go API calls <sub>(Not all of them tested though)</sub>
@@ -14,14 +16,14 @@
 
 ## Usage
 ### Installation
-`npm install pogobuf`
+`npm install pogobuf --save`
 
 ### Basic Usage
 Generally, every method that makes an API call returns an ES6 Promise that will be resolved with the response message object (or `true` if there was no response message).
 
-Before using a `pogobuf.Client` instance to make API calls you need to supply it with an auth token (which you can get from the `pogobuf.PTCLogin` class) and call `init()` to make an initial request.
+Before using a `pogobuf.Client` instance to make API calls you need to supply it with an auth token (which you can get from the `pogobuf.PTCLogin` or `pogobuf.GoogleLogin` class) and call `init()` to make an initial request.
 
-Example usage using PTC:
+Example usage with PTC login:
 
 ```javascript
 const pogobuf = require('pogobuf');
@@ -42,7 +44,7 @@ login.login('username', 'password')
 });
 ```
 
-Example usage using Google:
+Example usage with Google login:
 
 ```javascript
 const pogobuf = require('pogobuf');
@@ -63,7 +65,7 @@ login.login('username', 'password')
 });
 ```
 
-See the API documentation below, or [example.js](https://github.com/cyraxx/pogobuf/blob/master/example.js) for a more sophisticated example that does something useful.
+For more details, see the API documentation below or [the example scripts](https://github.com/cyraxx/pogobuf/blob/master/examples).
 
 ### Batch mode
 The Pokémon Go API offers the ability to send multiple requests in one call. To do this you can use pogobuf's batch mode:
@@ -119,22 +121,6 @@ Clears the list of batched requests and aborts batch mode.
 #### `batchCall()` ⇒ <code>Promise</code>
 Executes any batched requests.
 
-#### `setRequestCallback(callback)`
-Sets a callback to be called for any envelope or request just before it is sent to
-the server (mostly for debugging purposes).
-
-| Param | Type |
-| --- | --- |
-| callback | <code>function</code> |
-
-#### `setResponseCallback(callback)`
-Sets a callback to be called for any envelope or response just after it has been
-received from the server (mostly for debugging purposes).
-
-| Param | Type |
-| --- | --- |
-| callback | <code>function</code> |
-
 ## `pogobuf.Client` Pokémon Go API methods
 #### `addFortModifier(modifierItemID, fortID)` ⇒ <code>Promise</code>
 #### `attackGym(gymID, battleID, attackActions, lastRetrievedAction)` ⇒ <code>Promise</code>
@@ -182,12 +168,82 @@ received from the server (mostly for debugging purposes).
 #### `startGymBattle(gymID, attackingPokemonIDs, defendingPokemonID)` ⇒ <code>Promise</code>
 #### `upgradePokemon(pokemonID)` ⇒ <code>Promise</code>
 #### `useIncense(itemID)` ⇒ <code>Promise</code>
-#### `useItemCapture(itemID, encounterID, spawnPointGUID)` ⇒ <code>Promise</code>
+#### `useItemCapture(itemID, encounterID, spawnPointID)` ⇒ <code>Promise</code>
 #### `useItemEggIncubator(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemGym(itemID, gymID)` ⇒ <code>Promise</code>
 #### `useItemPotion(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemRevive(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemXPBoost(itemID)` ⇒ <code>Promise</code>
+
+## `pogobuf.Client` Events
+The `Client` class is an [`EventEmitter`](https://nodejs.org/api/events.html) that emits the following events
+(mostly for debugging purposes):
+
+#### `request(requestData)`
+Fires while building a RPC request envelope with subrequests.
+
+Example `requestData` structure:
+```javascript
+{
+    request_id: 8145806132888207000,
+    requests: [
+        {
+            name: 'Get Inventory',
+            type: 4,
+            data: {
+                last_timestamp_ms: 0
+            }
+        }
+    ]
+}
+```
+
+#### `raw-request(envelopeData)`
+Fires after building an RPC request envelope, just before it is encoded into a protobuf `RequestEnvelope`.
+
+#### `response(responseData)`
+Fires after receiving and successfully decoding an RPC request, just before the Promise is resolved.
+
+Example `responseData` structure:
+```javascript
+{
+    status_code: 1,
+    request_id: '8145806132888207360',
+    responses: [
+        {
+            name: 'Get Inventory',
+            type: 4,
+            data: {
+                /* inventory data */
+            }
+        }
+    ]
+}
+```
+
+#### `endpoint-response(responseData)`
+Fires after the initial RPC response (including the URL of the endpoint to use for all further requests)
+has been received and decoded.
+
+Example `responeData` structure:
+```javascript
+{
+    status_code: 53,
+    request_id: '8145806132888207360',
+    api_url: 'pgorelease.nianticlabs.com/plfe/403'
+}
+```
+
+#### `raw-response(responseEnvelope)`
+Fires when a RPC `ResponseEnvelope` has been received, just after it has been decoded.
+
+#### `parse-envelope-error(rawEnvelopeBuffer, error)`
+Fires when the `RequestEnvelope` structure could not be parsed (possibly due to erroneous .proto files).
+Can be used to dump out the raw protobuf response and debug using `protoc`.
+
+#### `parse-response-error(rawResponseBuffer, error)`
+Fires when one of the response messages received in an RPC response envelope could not be parsed (possibly
+due to erroneous .proto files). Can be used to dump out the raw protobuf response and debug using `protoc`.
 
 ## `pogobuf.GoogleLogin` methods
 #### `login(username, password)` ⇒ <code>Promise</code>
@@ -208,3 +264,21 @@ auth token.
 | --- | --- |
 | username | <code>string</code> |
 | password | <code>string</code> |
+
+## `pogobuf.Utils` methods
+### `splitInventory(inventory)` ⇒ <code>object</code> *(static)*
+Takes a `getInventory()` response and separates it into pokemon, items, candies, player
+data, eggs, and pokedex.
+
+| Param | Type | Description |
+| --- | --- | --- |
+| inventory | <code>object</code> | API response message as returned by `getInventory()` |
+
+### `getEnumKeyByValue(enumObj, val)` ⇒ <code>string</code> *(static)*
+Utility method that finds the name of the key for a given enum value and makes it
+look a little nicer.
+
+| Param | Type |
+| --- | --- |
+| enumObj | <code>object</code> |
+| val | <code>number</code> |

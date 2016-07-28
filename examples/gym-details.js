@@ -39,9 +39,9 @@ geocoder.geocode('2 Bryant St, San Francisco')
         client.setAuthInfo('ptc', token);
         client.setPosition(lat, lng);
 
-        // Uncomment the following if you want to see every request/response on the console
-        //client.setRequestCallback(console.dir);
-        //client.setResponseCallback(console.dir);
+        // Uncomment the following if you want to see request/response information on the console
+        //client.on('request', console.dir);
+        //client.on('response', console.dir);
 
         // Perform the initial request
         return client.init();
@@ -71,7 +71,7 @@ geocoder.geocode('2 Bryant St, San Francisco')
             console.log(gym.name);
             console.log('-'.repeat(gym.name.length));
 
-            var team = 'Owned by team: ' + getEnumKeyByValue(POGOProtos.Enums.TeamColor, fortData.owned_by_team);
+            var team = 'Owned by team: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.TeamColor, fortData.owned_by_team);
             if (fortData.is_in_battle) team += ' [IN BATTLE]';
             console.log(team);
 
@@ -79,7 +79,8 @@ geocoder.geocode('2 Bryant St, San Francisco')
 
             if (memberships && memberships.length) {
                 var highest = memberships[memberships.length - 1];
-                console.log('Highest Pokémon: ' + getEnumKeyByValue(POGOProtos.Enums.PokemonId, highest.pokemon_data.pokemon_id) + ', ' + highest.pokemon_data.cp + ' CP');
+
+                console.log('Highest Pokémon: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.PokemonId, highest.pokemon_data.pokemon_id) + ', ' + highest.pokemon_data.cp + ' CP');
                 console.log('Trainer: ' + highest.trainer_public_profile.name + ', level ' + highest.trainer_public_profile.level);
             }
 
@@ -107,15 +108,4 @@ function getCellIDs(radius) {
     }
 
     return cellIDs;
-}
-
-/**
- * Utility method that finds the name of the key for a given enum value and makes it
- * look a little nicer.
- */
-function getEnumKeyByValue(enumObj, val) {
-    for (var key of Object.keys(enumObj)) {
-        if (enumObj[key] === val) return key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
-    }
-    return null;
 }
