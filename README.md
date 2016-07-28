@@ -184,7 +184,7 @@ received from the server (mostly for debugging purposes).
 #### `startGymBattle(gymID, attackingPokemonIDs, defendingPokemonID)` ⇒ <code>Promise</code>
 #### `upgradePokemon(pokemonID)` ⇒ <code>Promise</code>
 #### `useIncense(itemID)` ⇒ <code>Promise</code>
-#### `useItemCapture(itemID, encounterID, spawnPointGUID)` ⇒ <code>Promise</code>
+#### `useItemCapture(itemID, encounterID, spawnPointID)` ⇒ <code>Promise</code>
 #### `useItemEggIncubator(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemGym(itemID, gymID)` ⇒ <code>Promise</code>
 #### `useItemPotion(itemID, pokemonID)` ⇒ <code>Promise</code>
@@ -217,8 +217,8 @@ Takes a `getInventory()` response and separates it into pokemon, items, candies,
 data, eggs, and pokedex.
 
 | Param | Type | Description |
-| --- | --- |
-| inventory | <code>object</code> | API response message as returned by `getInventory()`
+| --- | --- | --- |
+| inventory | <code>object</code> | API response message as returned by `getInventory()` |
 
 ### `getEnumKeyByValue(enumObj, val)` ⇒ <code>string</code> *(static)*
 Utility method that finds the name of the key for a given enum value and makes it

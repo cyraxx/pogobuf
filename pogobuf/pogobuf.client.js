@@ -288,13 +288,13 @@ function Client() {
         });
     };
 
-    this.useItemCapture = function(itemID, encounterID, spawnPointGUID) {
+    this.useItemCapture = function(itemID, encounterID, spawnPointID) {
         return self.callOrChain({
             type: RequestType.USE_ITEM_CAPTURE,
             message: new RequestMessages.UseItemCaptureMessage({
                 item_id: itemID,
                 encounter_id: encounterID,
-                spawn_point_guid: spawnPointGUID
+                spawn_point_id: spawnPointID
             }),
             responseType: Responses.UseItemCaptureResponse
         });
