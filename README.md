@@ -121,22 +121,6 @@ Clears the list of batched requests and aborts batch mode.
 #### `batchCall()` ⇒ <code>Promise</code>
 Executes any batched requests.
 
-#### `setRequestCallback(callback)`
-Sets a callback to be called for any envelope or request just before it is sent to
-the server (mostly for debugging purposes).
-
-| Param | Type |
-| --- | --- |
-| callback | <code>function</code> |
-
-#### `setResponseCallback(callback)`
-Sets a callback to be called for any envelope or response just after it has been
-received from the server (mostly for debugging purposes).
-
-| Param | Type |
-| --- | --- |
-| callback | <code>function</code> |
-
 ## `pogobuf.Client` Pokémon Go API methods
 #### `addFortModifier(modifierItemID, fortID)` ⇒ <code>Promise</code>
 #### `attackGym(gymID, battleID, attackActions, lastRetrievedAction)` ⇒ <code>Promise</code>
@@ -190,6 +174,76 @@ received from the server (mostly for debugging purposes).
 #### `useItemPotion(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemRevive(itemID, pokemonID)` ⇒ <code>Promise</code>
 #### `useItemXPBoost(itemID)` ⇒ <code>Promise</code>
+
+## `pogobuf.Client` Events
+The `Client` class is an [`EventEmitter`](https://nodejs.org/api/events.html) that emits the following events
+(mostly for debugging purposes):
+
+#### `request(requestData)`
+Fires while building a RPC request envelope with subrequests.
+
+Example `requestData` structure:
+```javascript
+{
+    request_id: 8145806132888207000,
+    requests: [
+        {
+            name: 'Get Inventory',
+            type: 4,
+            data: {
+                last_timestamp_ms: 0
+            }
+        }
+    ]
+}
+```
+
+#### `raw-request(envelopeData)`
+Fires after building an RPC request envelope, just before it is encoded into a protobuf `RequestEnvelope`.
+
+#### `response(responseData)`
+Fires after receiving and successfully decoding an RPC request, just before the Promise is resolved.
+
+Example `responseData` structure:
+```javascript
+{
+    status_code: 1,
+    request_id: '8145806132888207360',
+    responses: [
+        {
+            name: 'Get Inventory',
+            type: 4,
+            data: {
+                /* inventory data */
+            }
+        }
+    ]
+}
+```
+
+#### `endpoint-response(responseData)`
+Fires after the initial RPC response (including the URL of the endpoint to use for all further requests)
+has been received and decoded.
+
+Example `responeData` structure:
+```javascript
+{
+    status_code: 53,
+    request_id: '8145806132888207360',
+    api_url: 'pgorelease.nianticlabs.com/plfe/403'
+}
+```
+
+#### `raw-response(responseEnvelope)`
+Fires when a RPC `ResponseEnvelope` has been received, just after it has been decoded.
+
+#### `parse-envelope-error(rawEnvelopeBuffer, error)`
+Fires when the `RequestEnvelope` structure could not be parsed (possibly due to erroneous .proto files).
+Can be used to dump out the raw protobuf response and debug using `protoc`.
+
+#### `parse-response-error(rawResponseBuffer, error)`
+Fires when one of the response messages received in an RPC response envelope could not be parsed (possibly
+due to erroneous .proto files). Can be used to dump out the raw protobuf response and debug using `protoc`.
 
 ## `pogobuf.GoogleLogin` methods
 #### `login(username, password)` ⇒ <code>Promise</code>
