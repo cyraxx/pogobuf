@@ -52,16 +52,19 @@ function Client() {
      * @return {Promise}
      */
     this.init = function() {
-        /* The response to the first RPC call does not contain any response messages even though
-           the envelope includes requests, the callRPC is automatically retried on the new endpoint.
-           */
+        /*
+            The response to the first RPC call does not contain any response messages even though
+            the envelope includes requests, technically it wouldn't be necessary to send the requests
+            but the app does the same. The call will then automatically be resent to the new API
+            endpoint by callRPC().
+        */
         return self.batchStart()
-          .getPlayer()
-          .getHatchedEggs()
-          .getInventory(0)
-          .checkAwardedBadges()
-          .downloadSettings('05daf51635c82611d1aac95c0b051d3ec088a930')
-          .batchCall();
+            .getPlayer()
+            .getHatchedEggs()
+            .getInventory(0)
+            .checkAwardedBadges()
+            .downloadSettings('05daf51635c82611d1aac95c0b051d3ec088a930')
+            .batchCall();
     };
 
     /**
@@ -97,19 +100,21 @@ function Client() {
     /**
      * Sets a callback to be called for any envelope or request just before it is sent to
      * the server (mostly for debugging purposes).
+     * @deprecated Use the raw-request event instead
      * @param {function} callback
      */
     this.setRequestCallback = function(callback) {
-        self.requestCallback = callback;
+        self.on('raw-request', callback);
     };
 
     /**
      * Sets a callback to be called for any envelope or response just after it has been
      * received from the server (mostly for debugging purposes).
+     * @deprecated Use the raw-response event instead
      * @param {function} callback
      */
     this.setResponseCallback = function(callback) {
-        self.responseCallback = callback;
+        self.on('raw-response', callback);
     };
 
     /****** API CALLS (in order of RequestType enum) ******/
@@ -748,12 +753,12 @@ function Client() {
 
         if (requests) {
             self.emit('request', {
-              request_id: envelopeData.request_id,
-              requests: requests.map(r => ({
-                name: Utils.getEnumKeyByValue(RequestType, r.type),
-                type: r.type,
-                data: r.message
-              }))
+                request_id: envelopeData.request_id,
+                requests: requests.map(r => ({
+                    name: Utils.getEnumKeyByValue(RequestType, r.type),
+                    type: r.type,
+                    data: r.message
+                }))
             });
 
             envelopeData.requests = requests.map(r => {
@@ -819,37 +824,37 @@ function Client() {
                         return;
                     }
                 }
-                
+
                 self.emit('raw-response', responseEnvelope);
 
                 if (responseEnvelope.error) {
                     reject(Error(responseEnvelope.error));
                     return;
                 }
-                
+
                 if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
-                
+
                 if (self.endpoint === INITIAL_ENDPOINT) {
-                  /* status_code 102 seems to be invalid auth token, could use later when caching token. */
-                  if (responseEnvelope.status_code !== 53) {
-                    reject(Error('Fetching RPC endpoint failed, received staus code ' + responseEnvelope.status_code));
-                    return;
-                  }
-                  
-                  if (!responseEnvelope.api_url) {
-                    reject(Error('Fetching RPC endpoint failed, none supplied in response'));
-                    return;
-                  }
-                  
-                  self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
-                  
-                  self.emit('endpoint-response', {
-                    status_code:responseEnvelope.status_code,
-                    request_id: responseEnvelope.request_id.toString(),
-                    api_url: responseEnvelope.api_url
-                  });
-                  
-                  return resolve(this.callRPC(requests));
+                    /* status_code 102 seems to be invalid auth token, could use later when caching token. */
+                    if (responseEnvelope.status_code !== 53) {
+                        reject(Error('Fetching RPC endpoint failed, received staus code ' + responseEnvelope.status_code));
+                        return;
+                    }
+
+                    if (!responseEnvelope.api_url) {
+                        reject(Error('Fetching RPC endpoint failed, none supplied in response'));
+                        return;
+                    }
+
+                    self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
+
+                    self.emit('endpoint-response', {
+                        status_code: responseEnvelope.status_code,
+                        request_id: responseEnvelope.request_id.toString(),
+                        api_url: responseEnvelope.api_url
+                    });
+
+                    return resolve(this.callRPC(requests));
                 }
 
                 if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
@@ -880,15 +885,15 @@ function Client() {
                         responses.push(responseMessage);
                     }
                 }
-                
+
                 self.emit('response', {
-                  status_code:responseEnvelope.status_code,
-                  request_id: responseEnvelope.request_id.toString(),
-                  responses: responses.map((r, i) => ({
-                    name: Utils.getEnumKeyByValue(RequestType, requests[i].type),
-                    type: requests[i].type,
-                    data: r
-                  }))
+                    status_code: responseEnvelope.status_code,
+                    request_id: responseEnvelope.request_id.toString(),
+                    responses: responses.map((r, i) => ({
+                        name: Utils.getEnumKeyByValue(RequestType, requests[i].type),
+                        type: requests[i].type,
+                        data: r
+                    }))
                 });
 
                 if (!responses.length) resolve(true);
