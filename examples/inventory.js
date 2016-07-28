@@ -18,9 +18,9 @@ login.login('your-username@gmail.com', 'your-google-password')
         client.setAuthInfo('google', token);
         client.setPosition(lat, lng);
 
-        // Uncomment the following if you want to see every request/response on the console
-        //client.setRequestCallback(console.dir);
-        //client.setResponseCallback(console.dir);
+        // Uncomment the following if you want to see request/response information on the console
+        //client.on('request', console.dir);
+        //client.on('response', console.dir);
 
         // Perform the initial request
         return client.init();
