@@ -1,3 +1,5 @@
+'use strict';
+
 const request = require('request'),
     querystring = require('querystring'),
     url = require('url');
@@ -53,14 +55,14 @@ function PTCLogin() {
                     return;
                 }
 
-                if (response.statusCode != 200) {
-                    reject(Error("Status " + response.statusCode + " received from PTC login"));
+                if (response.statusCode !== 200) {
+                    reject(Error(`Status ${response.statusCode} received from PTC login`));
                     return;
                 }
 
                 var sessionResponse = JSON.parse(body);
                 if (!sessionResponse || !sessionResponse.lt && !sessionResponse.execution) {
-                    reject(Error("No session data received from PTC login"));
+                    reject(Error('No session data received from PTC login'));
                     return;
                 }
 
@@ -96,20 +98,20 @@ function PTCLogin() {
                     username: username,
                     password: password
                 }
-            }, (err, response, body) => {
+            }, (err, response) => {
                 if (err) {
                     reject(Error(err));
                     return;
                 }
 
-                if (response.statusCode != 302 || !response.headers.location) {
-                    reject(Error("Invalid response received from PTC login"));
+                if (response.statusCode !== 302 || !response.headers.location) {
+                    reject(Error('Invalid response received from PTC login'));
                     return;
                 }
 
                 var ticketURL = url.parse(response.headers.location, true);
                 if (!ticketURL || !ticketURL.query.ticket) {
-                    reject(Error("No login ticket received from PTC login"));
+                    reject(Error('No login ticket received from PTC login'));
                     return;
                 }
 
@@ -142,14 +144,14 @@ function PTCLogin() {
                     return;
                 }
 
-                if (response.statusCode != 200) {
-                    reject(Error("Received status " + response.statusCode + " from PTC OAuth"));
+                if (response.statusCode !== 200) {
+                    reject(Error(`Received status ${response.statusCode} from PTC OAuth`));
                     return;
                 }
 
                 var qs = querystring.parse(body);
                 if (!qs || !qs.access_token) {
-                    reject(Error("Invalid data received from PTC OAuth"));
+                    reject(Error('Invalid data received from PTC OAuth'));
                     return;
                 }
 

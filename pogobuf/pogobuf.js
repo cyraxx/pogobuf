@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Pogobuf Pokemón Go Client Library.
  * @module pogobuf

@@ -1,3 +1,5 @@
+'use strict';
+
 const EventEmitter = require('events').EventEmitter,
     POGOProtos = require('node-pogo-protos'),
     Utils = require('./pogobuf.utils.js'),
@@ -20,7 +22,9 @@ function Client() {
     }
     const self = this;
 
-    /****** PUBLIC METHODS ******/
+    /**
+     * PUBLIC METHODS
+     */
 
     /**
      * Sets the authentication type and token (required before making API calls).
@@ -49,7 +53,7 @@ function Client() {
 
     /**
      * Performs the initial API call.
-     * @return {Promise}
+     * @return {Promise} promise
      */
     this.init = function() {
         /*
@@ -59,7 +63,7 @@ function Client() {
             endpoint by callRPC().
         */
         return self.batchStart()
-            .getPlayer()
+          .getPlayer()
             .getHatchedEggs()
             .getInventory(0)
             .checkAwardedBadges()
@@ -73,7 +77,9 @@ function Client() {
      * @return {Client} this
      */
     this.batchStart = function() {
-        if (!self.batchRequests) self.batchRequests = [];
+        if (!self.batchRequests) {
+            self.batchRequests = [];
+        }
         return self;
     };
 
@@ -89,7 +95,9 @@ function Client() {
      * @return {Promise}
      */
     this.batchCall = function() {
-        if (!self.batchRequests || !self.batchRequests.length) return Promise.resolve(false);
+        if (!self.batchRequests || !self.batchRequests.length) {
+            return Promise.resolve(false);
+        }
 
         var p = self.callRPC(self.batchRequests);
 
@@ -101,7 +109,7 @@ function Client() {
      * Sets a callback to be called for any envelope or request just before it is sent to
      * the server (mostly for debugging purposes).
      * @deprecated Use the raw-request event instead
-     * @param {function} callback
+     * @param {function} callback - function to call on requests
      */
     this.setRequestCallback = function(callback) {
         self.on('raw-request', callback);
@@ -111,13 +119,15 @@ function Client() {
      * Sets a callback to be called for any envelope or response just after it has been
      * received from the server (mostly for debugging purposes).
      * @deprecated Use the raw-response event instead
-     * @param {function} callback
+     * @param {function} callback - function to call on responses
      */
     this.setResponseCallback = function(callback) {
         self.on('raw-response', callback);
     };
 
-    /****** API CALLS (in order of RequestType enum) ******/
+    /*
+     * API CALLS (in order of RequestType enum)
+     */
 
     this.playerUpdate = function() {
         return self.callOrChain({
@@ -691,7 +701,9 @@ function Client() {
         });
     };
 
-    /****** INTERNAL STUFF ******/
+    /*
+     * INTERNAL STUFF
+     */
 
     this.request = request.defaults({
         headers: {
@@ -708,7 +720,7 @@ function Client() {
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
      * list of batched requests and returns this (for chaining).
      * @private
-     * @param {object} request
+     * @param {object} request - RPC request object
      * @return {Promise|Client}
      */
     this.callOrChain = function(request) {
@@ -723,7 +735,7 @@ function Client() {
     /**
      * Creates an RPC envelope with the given list of requests.
      * @private
-     * @param {Object[]} requests
+     * @param {Object[]} requests - Array of requests to build
      * @return {POGOProtos.Networking.Envelopes.RequestEnvelope}
      */
     this.buildEnvelope = function(requests) {
@@ -740,7 +752,7 @@ function Client() {
         if (self.authTicket) {
             envelopeData.auth_ticket = self.authTicket;
         } else if (!self.authType || !self.authToken) {
-            throw Error("No auth info provided");
+            throw Error('No auth info provided');
         } else {
             envelopeData.auth_info = {
                 provider: self.authType,
@@ -782,7 +794,7 @@ function Client() {
     /**
      * Executes an RPC call with the given list of requests.
      * @private
-     * @param {Object[]} requests
+     * @param {Object[]} requests - Array of requests to send
      * @return {Promise} - A Promise that will be resolved with the (list of) response messages, or true if there aren't any
      */
     this.callRPC = function(requests) {
@@ -853,11 +865,12 @@ function Client() {
                         api_url: responseEnvelope.api_url
                     });
 
-                    return resolve(this.callRPC(requests));
+                    resolve(this.callRPC(requests));
+                    return;
                 }
 
                 if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
-                    reject(Error('Status code ' + responseEnvelope.status_code + ' received from RPC'));
+                    reject(Error(`Status code ${responseEnvelope.status_code} received from RPC`));
                     return;
                 }
 
@@ -865,7 +878,7 @@ function Client() {
 
                 if (requests) {
                     if (requests.length !== responseEnvelope.returns.length) {
-                        reject(Error("Request count does not match response count"));
+                        reject(Error('Request count does not match response count'));
                         return;
                     }
 
@@ -888,9 +901,9 @@ function Client() {
                 self.emit('response', {
                     status_code: responseEnvelope.status_code,
                     request_id: responseEnvelope.request_id.toString(),
-                    responses: responses.map((r, i) => ({
-                        name: Utils.getEnumKeyByValue(RequestType, requests[i].type),
-                        type: requests[i].type,
+                    responses: responses.map((r, h) => ({
+                        name: Utils.getEnumKeyByValue(RequestType, requests[h].type),
+                        type: requests[h].type,
                         data: r
                     }))
                 });
