@@ -60,8 +60,8 @@ module.exports = {
             if (itemdata.egg_incubators) {
                 egg_incubators.push(itemdata.egg_incubators);
             }
-            if (itemdata.pokemon_family) {
-                candies.push(itemdata.pokemon_family);
+            if (itemdata.candy) {
+                candies.push(itemdata.candy);
             }
         });
 
