@@ -788,7 +788,7 @@ function Client() {
 
         if (requests) {
             self.emit('request', {
-                request_id: envelopeData.request_id,
+                request_id: envelopeData.request_id.toString(),
                 requests: requests.map(r => ({
                     name: Utils.getEnumKeyByValue(RequestType, r.type),
                     type: r.type,
