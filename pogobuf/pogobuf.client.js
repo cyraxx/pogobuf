@@ -12,7 +12,6 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
-const THROTTLE_MS = 500;
 
 /**
  * Pokémon Go RPC client.
@@ -115,6 +114,14 @@ function Client() {
     this.enableThrottling = function(throttle) {
         self.throttling = throttle;
     };
+
+    /**
+     * Set a custom throttle time (default 500 ms)
+     * @param {number} throttle time in ms
+     */
+    this.setThrottlingTime = function(throttleTime) {
+        self.throttlingTime = throttleTime;
+    }
 
     /**
      * Sets a callback to be called for any envelope or request just before it is sent to
@@ -729,6 +736,7 @@ function Client() {
     this.endpoint = INITIAL_ENDPOINT;
     this.lastRequest = 0;
     this.throttling = true;
+    this.throttlingTime = 500;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -845,8 +853,8 @@ function Client() {
 
             if (self.throttling && self.endpoint !== INITIAL_ENDPOINT) {
                 var sinceLastRequest = Date.now() - self.lastRequest;
-                if (sinceLastRequest < THROTTLE_MS) {
-                    setTimeout(() => resolve(self.callRPC(requests, envelope)), THROTTLE_MS - sinceLastRequest);
+                if (sinceLastRequest < self.throttlingTime) {
+                    setTimeout(() => resolve(self.callRPC(requests, envelope)), self.throttlingTime - sinceLastRequest);
                     return;
                 }
 
