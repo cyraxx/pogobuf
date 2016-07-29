@@ -1,6 +1,8 @@
 'use strict';
 
-const EventEmitter = require('events').EventEmitter,
+const crypto = require('crypto'),
+    EventEmitter = require('events').EventEmitter,
+    Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
     Utils = require('./pogobuf.utils.js'),
     request = require('request');
@@ -736,13 +738,19 @@ function Client() {
     /**
      * Generates a request ID based on a random number then increments by one each call
      * @private
-     * @return {integer}
+     * @return {Long}
      */
     this.getRequestID = function() {
         if (self.request_id) {
-            return ++self.request_id;
+            self.request_id = self.request_id.add(1);
+        } else {
+            var bytes = crypto.randomBytes(8);
+            self.request_id = Long.fromBits(
+                bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
+                bytes[4] << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7],
+                true
+            );
         }
-        self.request_id = Math.random() * Math.pow(10, 19);
         return self.request_id;
     };
 
@@ -750,12 +758,13 @@ function Client() {
      * Creates an RPC envelope with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to build
+     * @param {Long} [requestID] - Optional specific request ID to use
      * @return {POGOProtos.Networking.Envelopes.RequestEnvelope}
      */
-    this.buildEnvelope = function(requests) {
+    this.buildEnvelope = function(requests, requestID) {
         var envelopeData = {
             status_code: 2,
-            request_id: self.getRequestID(),
+            request_id: requestID || self.getRequestID(),
             unknown12: 989
         };
 
@@ -809,15 +818,16 @@ function Client() {
      * Executes an RPC call with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to send
+     * @param {Long} [requestID] - Optional specific request ID to use
      * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
      *     or true if there aren't any
      */
-    this.callRPC = function(requests) {
+    this.callRPC = function(requests, requestID) {
         return new Promise((resolve, reject) => {
             var envelope;
 
             try {
-                envelope = self.buildEnvelope(requests);
+                envelope = self.buildEnvelope(requests, requestID);
             } catch (e) {
                 reject(e);
                 return;
@@ -864,7 +874,7 @@ function Client() {
                     /* status_code 102 seems to be invalid auth token,
                        could use later when caching token. */
                     if (responseEnvelope.status_code !== 53) {
-                        reject(Error('Fetching RPC endpoint failed, received staus code ' +
+                        reject(Error('Fetching RPC endpoint failed, received status code ' +
                             responseEnvelope.status_code));
                         return;
                     }
@@ -882,7 +892,7 @@ function Client() {
                         api_url: responseEnvelope.api_url
                     });
 
-                    resolve(this.callRPC(requests));
+                    resolve(self.callRPC(requests, envelope.request_id));
                     return;
                 }
 
