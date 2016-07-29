@@ -735,12 +735,14 @@ function Client() {
 
     /**
      * Generates a request ID based on a random number then increments by one each call
+     * @private
+     * @return {integer}
      */
-    this.getRequestId = function() {
-        if(self.request_id) {
+    this.getRequestID = function() {
+        if (self.request_id) {
             return ++self.request_id;
         }
-        self.request_id = Math.random()*Math.pow(10,19);
+        self.request_id = Math.random() * Math.pow(10, 19);
         return self.request_id;
     };
 
@@ -753,7 +755,7 @@ function Client() {
     this.buildEnvelope = function(requests) {
         var envelopeData = {
             status_code: 2,
-            request_id: self.getRequestId(),
+            request_id: self.getRequestID(),
             unknown12: 989
         };
 
