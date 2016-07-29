@@ -1,3 +1,5 @@
+'use strict';
+
 /*
 	This example script performs a sequence of actions:
 
@@ -15,11 +17,11 @@
 const pogobuf = require('pogobuf'),
     POGOProtos = require('node-pogo-protos'),
     s2 = require('s2geometry-node'),
-    NodeGeocoder = require('node-geocoder');
+    nodeGeocoder = require('node-geocoder');
 
 var login = new pogobuf.PTCLogin(),
     client = new pogobuf.Client(),
-    geocoder = NodeGeocoder(),
+    geocoder = nodeGeocoder(),
     lat,
     lng;
 
@@ -27,7 +29,9 @@ var login = new pogobuf.PTCLogin(),
 // Note: To avoid getting softbanned, change the address to one that is close to where you last used your account
 geocoder.geocode('2 Bryant St, San Francisco')
     .then(location => {
-        if (!location.length) throw Error("No location found");
+        if (!location.length) {
+            throw Error('No location found');
+        }
         lat = location[0].latitude;
         lng = location[0].longitude;
 
@@ -40,8 +44,8 @@ geocoder.geocode('2 Bryant St, San Francisco')
         client.setPosition(lat, lng);
 
         // Uncomment the following if you want to see request/response information on the console
-        //client.on('request', console.dir);
-        //client.on('response', console.dir);
+        // client.on('request', console.dir);
+        // client.on('response', console.dir);
 
         // Perform the initial request
         return client.init();
@@ -92,6 +96,8 @@ geocoder.geocode('2 Bryant St, San Francisco')
 /**
  * Utility method to get all the S2 Cell IDs in a given radius.
  * Ported from https://github.com/tejado/pgoapi/blob/master/pokecli.py
+ * @param {number} radius - radius around lat lng to return cellIDs
+ * @returns {array} Array of cell Ids
  */
 function getCellIDs(radius) {
     var cell = new s2.S2CellId(new s2.S2LatLng(lat, lng)),

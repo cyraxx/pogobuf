@@ -1,7 +1,13 @@
-const EventEmitter = require('events').EventEmitter,
+'use strict';
+
+const crypto = require('crypto'),
+    EventEmitter = require('events').EventEmitter,
+    Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
-    Utils = require('./pogobuf.utils.js'),
-    request = require('request');
+    Promise = require('bluebird'),
+    request = require('request'),
+    retry = require('bluebird-retry'),
+    Utils = require('./pogobuf.utils.js');
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
@@ -20,7 +26,9 @@ function Client() {
     }
     const self = this;
 
-    /****** PUBLIC METHODS ******/
+    /**
+     * PUBLIC METHODS
+     */
 
     /**
      * Sets the authentication type and token (required before making API calls).
@@ -49,14 +57,14 @@ function Client() {
 
     /**
      * Performs the initial API call.
-     * @return {Promise}
+     * @return {Promise} promise
      */
     this.init = function() {
         /*
             The response to the first RPC call does not contain any response messages even though
-            the envelope includes requests, technically it wouldn't be necessary to send the requests
-            but the app does the same. The call will then automatically be resent to the new API
-            endpoint by callRPC().
+            the envelope includes requests, technically it wouldn't be necessary to send the
+            requests but the app does the same. The call will then automatically be resent to the
+            new API endpoint by callRPC().
         */
         return self.batchStart()
             .getPlayer()
@@ -73,7 +81,9 @@ function Client() {
      * @return {Client} this
      */
     this.batchStart = function() {
-        if (!self.batchRequests) self.batchRequests = [];
+        if (!self.batchRequests) {
+            self.batchRequests = [];
+        }
         return self;
     };
 
@@ -89,7 +99,9 @@ function Client() {
      * @return {Promise}
      */
     this.batchCall = function() {
-        if (!self.batchRequests || !self.batchRequests.length) return Promise.resolve(false);
+        if (!self.batchRequests || !self.batchRequests.length) {
+            return Promise.resolve(false);
+        }
 
         var p = self.callRPC(self.batchRequests);
 
@@ -98,10 +110,19 @@ function Client() {
     };
 
     /**
+     * Sets the maximum times to try RPC calls until they succeed (default is 5 tries).
+     * Set to 1 to disable retry logic.
+     * @param {integer} maxTries
+     */
+    this.setMaxTries = function(maxTries) {
+        self.maxTries = maxTries;
+    };
+
+    /**
      * Sets a callback to be called for any envelope or request just before it is sent to
      * the server (mostly for debugging purposes).
      * @deprecated Use the raw-request event instead
-     * @param {function} callback
+     * @param {function} callback - function to call on requests
      */
     this.setRequestCallback = function(callback) {
         self.on('raw-request', callback);
@@ -111,13 +132,15 @@ function Client() {
      * Sets a callback to be called for any envelope or response just after it has been
      * received from the server (mostly for debugging purposes).
      * @deprecated Use the raw-response event instead
-     * @param {function} callback
+     * @param {function} callback - function to call on responses
      */
     this.setResponseCallback = function(callback) {
         self.on('raw-response', callback);
     };
 
-    /****** API CALLS (in order of RequestType enum) ******/
+    /*
+     * API CALLS (in order of RequestType enum)
+     */
 
     this.playerUpdate = function() {
         return self.callOrChain({
@@ -205,7 +228,8 @@ function Client() {
         });
     };
 
-    this.catchPokemon = function(encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon, spinModifier, normalizedHitPosition) {
+    this.catchPokemon = function(encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon,
+        spinModifier, normalizedHitPosition) {
         return self.callOrChain({
             type: RequestType.CATCH_POKEMON,
             message: new RequestMessages.CatchPokemonMessage({
@@ -691,7 +715,9 @@ function Client() {
         });
     };
 
-    /****** INTERNAL STUFF ******/
+    /*
+     * INTERNAL STUFF
+     */
 
     this.request = request.defaults({
         headers: {
@@ -703,33 +729,53 @@ function Client() {
     });
 
     this.endpoint = INITIAL_ENDPOINT;
+    this.maxTries = 5;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
      * list of batched requests and returns this (for chaining).
      * @private
-     * @param {object} request
+     * @param {object} requestMessage - RPC request object
      * @return {Promise|Client}
      */
-    this.callOrChain = function(request) {
+    this.callOrChain = function(requestMessage) {
         if (self.batchRequests) {
-            self.batchRequests.push(request);
+            self.batchRequests.push(requestMessage);
             return self;
         } else {
-            return self.callRPC([request]);
+            return self.callRPC([requestMessage]);
         }
+    };
+
+    /**
+     * Generates a request ID based on a random number then increments by one each call
+     * @private
+     * @return {Long}
+     */
+    this.getRequestID = function() {
+        if (self.request_id) {
+            self.request_id = self.request_id.add(1);
+        } else {
+            var bytes = crypto.randomBytes(8);
+            self.request_id = Long.fromBits(
+                bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
+                bytes[4] << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7],
+                true
+            );
+        }
+        return self.request_id;
     };
 
     /**
      * Creates an RPC envelope with the given list of requests.
      * @private
-     * @param {Object[]} requests
+     * @param {Object[]} requests - Array of requests to build
      * @return {POGOProtos.Networking.Envelopes.RequestEnvelope}
      */
     this.buildEnvelope = function(requests) {
         var envelopeData = {
             status_code: 2,
-            request_id: 8145806132888207460,
+            request_id: self.getRequestID(),
             unknown12: 989
         };
 
@@ -740,7 +786,7 @@ function Client() {
         if (self.authTicket) {
             envelopeData.auth_ticket = self.authTicket;
         } else if (!self.authType || !self.authToken) {
-            throw Error("No auth info provided");
+            throw Error('No auth info provided');
         } else {
             envelopeData.auth_info = {
                 provider: self.authType,
@@ -753,7 +799,7 @@ function Client() {
 
         if (requests) {
             self.emit('request', {
-                request_id: envelopeData.request_id,
+                request_id: envelopeData.request_id.toString(),
                 requests: requests.map(r => ({
                     name: Utils.getEnumKeyByValue(RequestType, r.type),
                     type: r.type,
@@ -762,15 +808,15 @@ function Client() {
             });
 
             envelopeData.requests = requests.map(r => {
-                var request = {
+                var requestData = {
                     request_type: r.type
                 };
 
                 if (r.message) {
-                    request.request_message = r.message.encode();
+                    requestData.request_message = r.message.encode();
                 }
 
-                return request;
+                return requestData;
             });
         }
 
@@ -780,20 +826,40 @@ function Client() {
     };
 
     /**
+     * Executes an RPC call with the given list of requests, retrying if necessary.
+     * @private
+     * @param {Object[]} requests - Array of requests to send
+     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to use
+     * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
+     *     or true if there aren't any
+     */
+    this.callRPC = function(requests, envelope) {
+        if (self.maxTries <= 1) return self.tryCallRPC(requests, envelope);
+
+        return retry(() => self.tryCallRPC(requests, envelope), {
+            interval: 300,
+            backoff: 2,
+            max_tries: self.maxTries
+        });
+    };
+
+    /**
      * Executes an RPC call with the given list of requests.
      * @private
-     * @param {Object[]} requests
-     * @return {Promise} - A Promise that will be resolved with the (list of) response messages, or true if there aren't any
+     * @param {Object[]} requests - Array of requests to send
+     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to use
+     * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
+     *     or true if there aren't any
      */
-    this.callRPC = function(requests) {
+    this.tryCallRPC = function(requests, envelope) {
         return new Promise((resolve, reject) => {
-            var envelope;
-
-            try {
-                envelope = self.buildEnvelope(requests);
-            } catch (e) {
-                reject(e);
-                return;
+            if (!envelope) {
+                try {
+                    envelope = self.buildEnvelope(requests);
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
             }
 
             self.request({
@@ -834,9 +900,11 @@ function Client() {
                 if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
                 if (self.endpoint === INITIAL_ENDPOINT) {
-                    /* status_code 102 seems to be invalid auth token, could use later when caching token. */
+                    /* status_code 102 seems to be invalid auth token,
+                       could use later when caching token. */
                     if (responseEnvelope.status_code !== 53) {
-                        reject(Error('Fetching RPC endpoint failed, received staus code ' + responseEnvelope.status_code));
+                        reject(Error('Fetching RPC endpoint failed, received status code ' +
+                            responseEnvelope.status_code));
                         return;
                     }
 
@@ -853,11 +921,12 @@ function Client() {
                         api_url: responseEnvelope.api_url
                     });
 
-                    return resolve(this.callRPC(requests));
+                    resolve(self.callRPC(requests, envelope));
+                    return;
                 }
 
                 if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
-                    reject(Error('Status code ' + responseEnvelope.status_code + ' received from RPC'));
+                    reject(Error(`Status code ${responseEnvelope.status_code} received from RPC`));
                     return;
                 }
 
@@ -865,7 +934,7 @@ function Client() {
 
                 if (requests) {
                     if (requests.length !== responseEnvelope.returns.length) {
-                        reject(Error("Request count does not match response count"));
+                        reject(Error('Request count does not match response count'));
                         return;
                     }
 
@@ -888,9 +957,9 @@ function Client() {
                 self.emit('response', {
                     status_code: responseEnvelope.status_code,
                     request_id: responseEnvelope.request_id.toString(),
-                    responses: responses.map((r, i) => ({
-                        name: Utils.getEnumKeyByValue(RequestType, requests[i].type),
-                        type: requests[i].type,
+                    responses: responses.map((r, h) => ({
+                        name: Utils.getEnumKeyByValue(RequestType, requests[h].type),
+                        type: requests[h].type,
                         data: r
                     }))
                 });

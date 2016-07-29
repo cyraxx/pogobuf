@@ -1,3 +1,5 @@
+'use strict';
+
 /*
 	This example script shows how to work with the getInventory() API call and the splitInventory() function.
 */
@@ -8,8 +10,8 @@ const pogobuf = require('pogobuf'),
 const lat = 37.7876146,
     lng = -122.3884353;
 
-const login = pogobuf.GoogleLogin(),
-    client = pogobuf.Client();
+const login = new pogobuf.GoogleLogin(),
+    client = new pogobuf.Client();
 
 // Login to Google and get a login token
 login.login('your-username@gmail.com', 'your-google-password')
@@ -19,8 +21,8 @@ login.login('your-username@gmail.com', 'your-google-password')
         client.setPosition(lat, lng);
 
         // Uncomment the following if you want to see request/response information on the console
-        //client.on('request', console.dir);
-        //client.on('response', console.dir);
+        // client.on('request', console.dir);
+        // client.on('response', console.dir);
 
         // Perform the initial request
         return client.init();

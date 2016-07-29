@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Various utilities for dealing with Pokémon Go API requests.
  * @class Utils
@@ -6,15 +8,18 @@
 
 module.exports = {
     /**
-     * Takes a getInventory() response and separates it into pokemon, items, candies, player data, eggs, and pokedex.
+     * Takes a getInventory() response and separates it into pokemon, items, candies, player data,
+     * eggs, and pokedex.
      * @param {object} inventory - API response message as returned by getInventory()
      * @returns {object}
      * @static
      */
     splitInventory: function(inventory) {
-        if (!inventory || !inventory.inventory_delta || !inventory.inventory_delta.inventory_items)
+        if (!inventory || !inventory.inventory_delta || !inventory.inventory_delta.inventory_items) {
             return {};
+        }
 
+        /* eslint-disable camelcase */
         var pokemon = [],
             items = [],
             pokedex = [],
@@ -25,6 +30,7 @@ module.exports = {
             applied_items = [],
             egg_incubators = [],
             candies = [];
+        /* eslint-enable camelcase */
 
         inventory.inventory_delta.inventory_items.forEach(item => {
             var itemdata = item.inventory_item_data;
@@ -55,8 +61,8 @@ module.exports = {
             if (itemdata.egg_incubators) {
                 egg_incubators.push(itemdata.egg_incubators);
             }
-            if (itemdata.pokemon_family) {
-                candies.push(itemdata.pokemon_family);
+            if (itemdata.candy) {
+                candies.push(itemdata.candy);
             }
         });
 
@@ -84,10 +90,11 @@ module.exports = {
      */
     getEnumKeyByValue: function(enumObj, val) {
         for (var key of Object.keys(enumObj)) {
-            if (enumObj[key] === val)
+            if (enumObj[key] === val) {
                 return key.split('_')
                     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                     .join(' ');
+            }
         }
         return null;
     }

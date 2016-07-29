@@ -5,10 +5,11 @@
 ![license](https://img.shields.io/npm/l/pogobuf.svg)
 
 ## Features
-* Implements all known Pokémon Go API calls <sub>(Not all of them tested though)</sub>
-* Uses ES6 Promises
+* Implements all known Pokémon Go API calls
+* Uses ES6 Promises and [Bluebird](https://github.com/petkaantonov/bluebird/)
 * Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) and Google login clients
 * Optional batch mode to group several requests in one RPC call
+* Automatically retries failed API requests with increasing delay
 
 ## Acknowledgements
 * Uses the excellent [POGOProtos](https://github.com/AeonLucid/POGOProtos) (via [node-pogo-protos](https://github.com/cyraxx/node-pogo-protos))
@@ -120,6 +121,13 @@ Clears the list of batched requests and aborts batch mode.
 
 #### `batchCall()` ⇒ <code>Promise</code>
 Executes any batched requests.
+
+#### `setMaxTries(maxTries)`
+Sets the maximum times to try RPC calls until they succeed (default is 5 tries). Set to 1 to disable retry logic.
+
+| Param | Type |
+| --- | --- |
+| maxTries | <code>integer</code> |
 
 ## `pogobuf.Client` Pokémon Go API methods
 #### `addFortModifier(modifierItemID, fortID)` ⇒ <code>Promise</code>

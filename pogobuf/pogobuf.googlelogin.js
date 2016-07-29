@@ -1,5 +1,7 @@
-const GoogleOAuth = require('gpsoauthnode'),
-    google = new GoogleOAuth();
+'use strict';
+
+const GoogleOAuth = require('gpsoauthnode');
+const google = new GoogleOAuth();
 
 /**
  * Google login client.
@@ -15,14 +17,16 @@ function GoogleLogin() {
     /**
      * Based of https://github.com/tejado/pgoapi/blob/master/pgoapi/auth_google.py#L33
      */
+    /* eslint-disable max-len */
     const GOOGLE_LOGIN_ANDROID_ID = '9774d56d682e549c';
     const GOOGLE_LOGIN_SERVICE = 'audience:server:client_id:848232511240-7so421jotr2609rmqakceuu1luuq0ptb.apps.googleusercontent.com';
     const GOOGLE_LOGIN_APP = 'com.nianticlabs.pokemongo';
     const GOOGLE_LOGIN_CLIENT_SIG = '321187995bc7cdc2b5fc91b11a96e2baa8602c62';
+    /* eslint-enable max-len */
 
     /**
-     * Performs the Google Login using Android Device and returns a Promise that will be resolved with the
-     * auth token.
+     * Performs the Google Login using Android Device and returns a Promise that will be resolved
+     * with the auth token.
      * @param {string} username
      * @param {string} password
      * @return {Promise}
@@ -49,7 +53,7 @@ function GoogleLogin() {
                     return;
                 }
 
-                return resolve(data);
+                resolve(data);
             });
         });
     };
@@ -63,14 +67,15 @@ function GoogleLogin() {
      */
     this.getToken = function(username, loginData) {
         return new Promise((resolve, reject) => {
-            google.oauth(username, loginData.masterToken, loginData.androidId, GOOGLE_LOGIN_SERVICE, GOOGLE_LOGIN_APP, GOOGLE_LOGIN_CLIENT_SIG, (err, data) => {
-                if (err) {
-                    reject(Error(err.response.statusCode + ': ' + err.response.statusMessage));
-                    return;
-                }
+            google.oauth(username, loginData.masterToken, loginData.androidId,
+                GOOGLE_LOGIN_SERVICE, GOOGLE_LOGIN_APP, GOOGLE_LOGIN_CLIENT_SIG, (err, data) => {
+                    if (err) {
+                        reject(Error(err.response.statusCode + ': ' + err.response.statusMessage));
+                        return;
+                    }
 
-                return resolve(data);
-            });
+                    resolve(data);
+                });
         });
     };
 }
