@@ -864,7 +864,8 @@ function Client() {
                     /* status_code 102 seems to be invalid auth token,
                        could use later when caching token. */
                     if (responseEnvelope.status_code !== 53) {
-                        reject(Error('Fetching RPC endpoint failed, received staus code ' + responseEnvelope.status_code));
+                        reject(Error('Fetching RPC endpoint failed, received staus code ' +
+                            responseEnvelope.status_code));
                         return;
                     }
 
