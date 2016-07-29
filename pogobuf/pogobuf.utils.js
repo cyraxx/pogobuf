@@ -8,7 +8,8 @@
 
 module.exports = {
     /**
-     * Takes a getInventory() response and separates it into pokemon, items, candies, player data, eggs, and pokedex.
+     * Takes a getInventory() response and separates it into pokemon, items, candies, player data,
+     * eggs, and pokedex.
      * @param {object} inventory - API response message as returned by getInventory()
      * @returns {object}
      * @static

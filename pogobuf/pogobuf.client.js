@@ -58,12 +58,12 @@ function Client() {
     this.init = function() {
         /*
             The response to the first RPC call does not contain any response messages even though
-            the envelope includes requests, technically it wouldn't be necessary to send the requests
-            but the app does the same. The call will then automatically be resent to the new API
-            endpoint by callRPC().
+            the envelope includes requests, technically it wouldn't be necessary to send the
+            requests but the app does the same. The call will then automatically be resent to the
+            new API endpoint by callRPC().
         */
         return self.batchStart()
-          .getPlayer()
+            .getPlayer()
             .getHatchedEggs()
             .getInventory(0)
             .checkAwardedBadges()
@@ -215,7 +215,8 @@ function Client() {
         });
     };
 
-    this.catchPokemon = function(encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon, spinModifier, normalizedHitPosition) {
+    this.catchPokemon = function(encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon,
+        spinModifier, normalizedHitPosition) {
         return self.callOrChain({
             type: RequestType.CATCH_POKEMON,
             message: new RequestMessages.CatchPokemonMessage({
@@ -720,15 +721,15 @@ function Client() {
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
      * list of batched requests and returns this (for chaining).
      * @private
-     * @param {object} request - RPC request object
+     * @param {object} requestMessage - RPC request object
      * @return {Promise|Client}
      */
-    this.callOrChain = function(request) {
+    this.callOrChain = function(requestMessage) {
         if (self.batchRequests) {
-            self.batchRequests.push(request);
+            self.batchRequests.push(requestMessage);
             return self;
         } else {
-            return self.callRPC([request]);
+            return self.callRPC([requestMessage]);
         }
     };
 
@@ -774,15 +775,15 @@ function Client() {
             });
 
             envelopeData.requests = requests.map(r => {
-                var request = {
+                var requestData = {
                     request_type: r.type
                 };
 
                 if (r.message) {
-                    request.request_message = r.message.encode();
+                    requestData.request_message = r.message.encode();
                 }
 
-                return request;
+                return requestData;
             });
         }
 
@@ -795,7 +796,8 @@ function Client() {
      * Executes an RPC call with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to send
-     * @return {Promise} - A Promise that will be resolved with the (list of) response messages, or true if there aren't any
+     * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
+     *     or true if there aren't any
      */
     this.callRPC = function(requests) {
         return new Promise((resolve, reject) => {
@@ -846,7 +848,8 @@ function Client() {
                 if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
                 if (self.endpoint === INITIAL_ENDPOINT) {
-                    /* status_code 102 seems to be invalid auth token, could use later when caching token. */
+                    /* status_code 102 seems to be invalid auth token,
+                       could use later when caching token. */
                     if (responseEnvelope.status_code !== 53) {
                         reject(Error('Fetching RPC endpoint failed, received staus code ' + responseEnvelope.status_code));
                         return;
