@@ -5,8 +5,8 @@
 ![license](https://img.shields.io/npm/l/pogobuf.svg)
 
 ## Features
-* Implements all known Pokémon Go API calls <sub>(Not all of them tested though)</sub>
-* Uses ES6 Promises
+* Implements all known Pokémon Go API calls
+* Uses ES6 Promises and [Bluebird](https://github.com/petkaantonov/bluebird/)
 * Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) and Google login clients
 * Optional batch mode to group several requests in one RPC call
 * Automatically retries failed API requests with increasing delay
