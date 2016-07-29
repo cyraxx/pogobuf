@@ -122,12 +122,12 @@ Clears the list of batched requests and aborts batch mode.
 #### `batchCall()` ⇒ <code>Promise</code>
 Executes any batched requests.
 
-#### `enableThrottling(throttle)`
-Enables/disables automatic throttling to 2 requests per second (enabled by default).
+#### `setThrottleDelay(delayMs)`
+Sets the minimum time between API requests (500 ms by default).
 
-| Param | Type |
-| --- | --- |
-| throttle | <code>boolean</code> |
+| Param | Type | Description |
+| --- | --- | --- |
+| delayMs | <code>integer</code> | Time in ms, or 0 to turn off throttling |
 
 ## `pogobuf.Client` Pokémon Go API methods
 #### `addFortModifier(modifierItemID, fortID)` ⇒ <code>Promise</code>

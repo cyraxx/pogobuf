@@ -12,7 +12,7 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
-const THROTTLE_MS = 500;
+const THROTTLE_MS_DEFAULT = 500;
 
 /**
  * Pokémon Go RPC client.
@@ -109,11 +109,11 @@ function Client() {
     };
 
     /**
-     * Enables/disables automatic throttling to 1 request per second (enabled by default).
-     * @param {boolean} throttle
+     * Sets the minimum time between API requests (500 ms by default).
+     * @param {integer} delayMs - Time in ms, or 0 to turn off throttling
      */
-    this.enableThrottling = function(throttle) {
-        self.throttling = throttle;
+    this.setThrottleDelay = function(delayMs) {
+        self.throttleDelay = delayMs;
     };
 
     /**
@@ -728,7 +728,7 @@ function Client() {
 
     this.endpoint = INITIAL_ENDPOINT;
     this.lastRequest = 0;
-    this.throttling = true;
+    this.throttleDelay = THROTTLE_MS_DEFAULT;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -843,10 +843,11 @@ function Client() {
                 }
             }
 
-            if (self.throttling && self.endpoint !== INITIAL_ENDPOINT) {
+            if (self.throttleDelay && self.endpoint !== INITIAL_ENDPOINT) {
                 var sinceLastRequest = Date.now() - self.lastRequest;
-                if (sinceLastRequest < THROTTLE_MS) {
-                    setTimeout(() => resolve(self.callRPC(requests, envelope)), THROTTLE_MS - sinceLastRequest);
+                if (sinceLastRequest < self.throttleDelay) {
+                    setTimeout(() => resolve(self.callRPC(requests, envelope)), self.throttleDelay -
+                        sinceLastRequest);
                     return;
                 }
 
