@@ -66,6 +66,8 @@ function Client() {
             requests but the app does the same. The call will then automatically be resent to the
             new API endpoint by callRPC().
         */
+        self.endpoint = INITIAL_ENDPOINT;
+
         return self.batchStart()
             .getPlayer()
             .getHatchedEggs()
