@@ -9,6 +9,7 @@
 * Uses ES6 Promises
 * Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) and Google login clients
 * Optional batch mode to group several requests in one RPC call
+* Automatic request throttling
 
 ## Acknowledgements
 * Uses the excellent [POGOProtos](https://github.com/AeonLucid/POGOProtos) (via [node-pogo-protos](https://github.com/cyraxx/node-pogo-protos))
@@ -120,6 +121,13 @@ Clears the list of batched requests and aborts batch mode.
 
 #### `batchCall()` ⇒ <code>Promise</code>
 Executes any batched requests.
+
+#### `enableThrottling(throttle)`
+Enables/disables automatic throttling to 1 request per second (enabled by default).
+
+| Param | Type |
+| --- | --- |
+| throttle | <code>boolean</code> |
 
 ## `pogobuf.Client` Pokémon Go API methods
 #### `addFortModifier(modifierItemID, fortID)` ⇒ <code>Promise</code>
