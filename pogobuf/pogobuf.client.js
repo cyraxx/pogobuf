@@ -734,6 +734,17 @@ function Client() {
     };
 
     /**
+     * Generates a request ID based on a random number then increments by one each call
+     */
+    this.getRequestId = function() {
+        if(self.request_id) {
+            return ++self.request_id;
+        }
+        self.request_id = Math.random()*Math.pow(10,19);
+        return self.request_id;
+    };
+
+    /**
      * Creates an RPC envelope with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to build
@@ -742,7 +753,7 @@ function Client() {
     this.buildEnvelope = function(requests) {
         var envelopeData = {
             status_code: 2,
-            request_id: 8145806132888207460,
+            request_id: self.getRequestId(),
             unknown12: 989
         };
 
