@@ -12,6 +12,7 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
+const THROTTLE_MS = 1000;
 
 /**
  * Pokémon Go RPC client.
@@ -105,6 +106,14 @@ function Client() {
 
         self.batchClear();
         return p;
+    };
+
+    /**
+     * Enables/disables automatic throttling to 1 request per second (enabled by default).
+     * @param {boolean} throttle
+     */
+    this.enableThrottling = function(throttle) {
+        self.throttling = throttle;
     };
 
     /**
@@ -718,6 +727,8 @@ function Client() {
     });
 
     this.endpoint = INITIAL_ENDPOINT;
+    this.lastRequest = 0;
+    this.throttling = true;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -758,13 +769,12 @@ function Client() {
      * Creates an RPC envelope with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to build
-     * @param {Long} [requestID] - Optional specific request ID to use
      * @return {POGOProtos.Networking.Envelopes.RequestEnvelope}
      */
-    this.buildEnvelope = function(requests, requestID) {
+    this.buildEnvelope = function(requests) {
         var envelopeData = {
             status_code: 2,
-            request_id: requestID || self.getRequestID(),
+            request_id: self.getRequestID(),
             unknown12: 989
         };
 
@@ -818,19 +828,29 @@ function Client() {
      * Executes an RPC call with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to send
-     * @param {Long} [requestID] - Optional specific request ID to use
+     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to use
      * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
      *     or true if there aren't any
      */
-    this.callRPC = function(requests, requestID) {
+    this.callRPC = function(requests, envelope) {
         return new Promise((resolve, reject) => {
-            var envelope;
+            if (!envelope) {
+                try {
+                    envelope = self.buildEnvelope(requests);
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
+            }
 
-            try {
-                envelope = self.buildEnvelope(requests, requestID);
-            } catch (e) {
-                reject(e);
-                return;
+            if (self.throttling && self.endpoint !== INITIAL_ENDPOINT) {
+                var sinceLastRequest = Date.now() - self.lastRequest;
+                if (sinceLastRequest < THROTTLE_MS) {
+                    setTimeout(() => resolve(self.callRPC(requests, envelope)), THROTTLE_MS - sinceLastRequest);
+                    return;
+                }
+
+                self.lastRequest = Date.now();
             }
 
             self.request({
@@ -892,7 +912,7 @@ function Client() {
                         api_url: responseEnvelope.api_url
                     });
 
-                    resolve(self.callRPC(requests, envelope.request_id));
+                    resolve(self.callRPC(requests, envelope));
                     return;
                 }
 
