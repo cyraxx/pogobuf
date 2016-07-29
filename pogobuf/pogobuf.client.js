@@ -12,7 +12,7 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
-const THROTTLE_MS = 1000;
+const THROTTLE_MS = 500;
 
 /**
  * Pokémon Go RPC client.

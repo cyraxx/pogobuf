@@ -123,7 +123,7 @@ Clears the list of batched requests and aborts batch mode.
 Executes any batched requests.
 
 #### `enableThrottling(throttle)`
-Enables/disables automatic throttling to 1 request per second (enabled by default).
+Enables/disables automatic throttling to 2 requests per second (enabled by default).
 
 | Param | Type |
 | --- | --- |
