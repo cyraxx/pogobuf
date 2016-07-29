@@ -18,16 +18,18 @@ module.exports = {
             return {};
         }
 
+        /* eslint-disable camelcase */
         var pokemon = [],
             items = [],
             pokedex = [],
             player = null,
             currency = [],
             camera = null,
-            inventory_upgrades = [], // eslint-disable-line
-            applied_items = [], // eslint-disable-line
-            egg_incubators = [], // eslint-disable-line
+            inventory_upgrades = [],
+            applied_items = [],
+            egg_incubators = [],
             candies = [];
+        /* eslint-enable camelcase */
 
         inventory.inventory_delta.inventory_items.forEach(item => {
             var itemdata = item.inventory_item_data;
