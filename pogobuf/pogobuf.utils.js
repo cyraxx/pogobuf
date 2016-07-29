@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Various utilities for dealing with Pokémon Go API requests.
  * @class Utils
@@ -12,8 +14,9 @@ module.exports = {
      * @static
      */
     splitInventory: function(inventory) {
-        if (!inventory || !inventory.inventory_delta || !inventory.inventory_delta.inventory_items)
+        if (!inventory || !inventory.inventory_delta || !inventory.inventory_delta.inventory_items) {
             return {};
+        }
 
         var pokemon = [],
             items = [],
@@ -21,9 +24,9 @@ module.exports = {
             player = null,
             currency = [],
             camera = null,
-            inventory_upgrades = [],
-            applied_items = [],
-            egg_incubators = [],
+            inventory_upgrades = [], // eslint-disable-line
+            applied_items = [], // eslint-disable-line
+            egg_incubators = [], // eslint-disable-line
             candies = [];
 
         inventory.inventory_delta.inventory_items.forEach(item => {
@@ -84,10 +87,11 @@ module.exports = {
      */
     getEnumKeyByValue: function(enumObj, val) {
         for (var key of Object.keys(enumObj)) {
-            if (enumObj[key] === val)
+            if (enumObj[key] === val) {
                 return key.split('_')
                     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                     .join(' ');
+            }
         }
         return null;
     }

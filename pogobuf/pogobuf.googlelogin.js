@@ -1,5 +1,7 @@
-const GoogleOAuth = require('gpsoauthnode'),
-    google = new GoogleOAuth();
+'use strict';
+
+const GoogleOAuth = require('gpsoauthnode');
+const google = new GoogleOAuth();
 
 /**
  * Google login client.
@@ -49,7 +51,7 @@ function GoogleLogin() {
                     return;
                 }
 
-                return resolve(data);
+                resolve(data);
             });
         });
     };
@@ -69,7 +71,7 @@ function GoogleLogin() {
                     return;
                 }
 
-                return resolve(data);
+                resolve(data);
             });
         });
     };
