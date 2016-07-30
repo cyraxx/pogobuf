@@ -300,10 +300,9 @@ look a little nicer.
 | enumObj | <code>object</code> |
 | val | <code>number</code> |
 
+### `getIVsFromPokemon(pokemon)` ⇒ <code>object</code> *(static)*
+Utility method to get the Individual Values from Pokémon
 
-### `getIvsFromPokemon(poke)` ⇒ <code>object</code> *(static)*
-Utility to get the Individual Values from pokemon
-
-| Param | Type |
-| --- | --- |
-| poke | <code>object</code> |
+| Param | Type | Description |
+| --- | --- | --- |
+| pokemon | <code>object</code> | A `pokemon-data` structure |
