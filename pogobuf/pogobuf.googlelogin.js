@@ -19,7 +19,8 @@ function GoogleLogin() {
      */
     /* eslint-disable max-len */
     const GOOGLE_LOGIN_ANDROID_ID = '9774d56d682e549c';
-    const GOOGLE_LOGIN_SERVICE = 'audience:server:client_id:848232511240-7so421jotr2609rmqakceuu1luuq0ptb.apps.googleusercontent.com';
+    const GOOGLE_LOGIN_SERVICE =
+        'audience:server:client_id:848232511240-7so421jotr2609rmqakceuu1luuq0ptb.apps.googleusercontent.com';
     const GOOGLE_LOGIN_APP = 'com.nianticlabs.pokemongo';
     const GOOGLE_LOGIN_CLIENT_SIG = '321187995bc7cdc2b5fc91b11a96e2baa8602c62';
     /* eslint-enable max-len */
@@ -49,7 +50,16 @@ function GoogleLogin() {
         return new Promise((resolve, reject) => {
             google.login(username, password, GOOGLE_LOGIN_ANDROID_ID, (err, data) => {
                 if (err) {
-                    reject(Error(err.response.statusCode + ': ' + err.response.statusMessage));
+                    if (err.response.statusCode === 403) {
+                        reject(Error(
+                            'Received code 403 from Google login. This could be because your account has ' +
+                            '2-Step-Verification enabled. If that is the case, you need to generate an ' +
+                            'App Password and use that instead of your regular password: ' +
+                            'https://security.google.com/settings/security/apppasswords'
+                        ));
+                    } else {
+                        reject(Error(err.response.statusCode + ': ' + err.response.statusMessage));
+                    }
                     return;
                 }
 
