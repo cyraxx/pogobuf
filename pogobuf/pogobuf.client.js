@@ -38,6 +38,7 @@ function Client() {
     this.setAuthInfo = function(authType, authToken) {
         self.authType = authType;
         self.authToken = authToken;
+        self.authTicket = null;
     };
 
     /**
