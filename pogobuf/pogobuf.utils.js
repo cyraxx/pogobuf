@@ -166,5 +166,25 @@ module.exports = {
             }
         }
         return null;
+    },
+    
+    /**
+     * Utility to get the Individual Values from pokemon
+     * @param {object} poke
+     * @returns {object}
+     * @static
+     */
+    
+    getIvsFromPokemon : function(poke) {
+          var att = poke.individual_attack;
+          var def = poke.individual_defense;
+          var stam = poke.individual_stamina;
+          var percent = (att + def + stam) / 45 * 100;
+          return {
+            att: att,
+            def: def,
+            stam: stam,
+            percent: percent
+          };
     }
 };
