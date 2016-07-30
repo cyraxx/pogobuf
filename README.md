@@ -305,4 +305,4 @@ Utility method to get the Individual Values from Pokémon
 
 | Param | Type | Description |
 | --- | --- | --- |
-| pokemon | <code>object</code> | A `pokemon-data` structure |
+| pokemon | <code>object</code> | A `pokemon_data` structure |
