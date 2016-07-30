@@ -292,7 +292,7 @@ look a little nicer.
 | val | <code>number</code> |
 
 
-### `getIvsFromPokemon(poke)` <code>object</code> *(static)*
+### `getIvsFromPokemon(poke)` ⇒ <code>object</code> *(static)*
 Utility to get the Individual Values from pokemon
 
 | Param | Type |
