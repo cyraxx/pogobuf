@@ -299,3 +299,11 @@ look a little nicer.
 | --- | --- |
 | enumObj | <code>object</code> |
 | val | <code>number</code> |
+
+
+### `getIvsFromPokemon(poke)` ⇒ <code>object</code> *(static)*
+Utility to get the Individual Values from pokemon
+
+| Param | Type |
+| --- | --- |
+| poke | <code>object</code> |
