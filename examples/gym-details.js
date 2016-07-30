@@ -52,7 +52,7 @@ geocoder.geocode('2 Bryant St, San Francisco')
     })
     .then(() => {
         // Retrieve all map objects in the surrounding area
-        var cellIDs = getCellIDs(10);
+        var cellIDs = getCellIDs(lat, lng);
         return client.getMapObjects(cellIDs, Array(cellIDs.length).fill(0));
     })
     .then(mapObjects => {
@@ -95,23 +95,33 @@ geocoder.geocode('2 Bryant St, San Francisco')
 
 /**
  * Utility method to get all the S2 Cell IDs in a given radius.
- * Ported from https://github.com/tejado/pgoapi/blob/master/pokecli.py
- * @param {number} radius - radius around lat lng to return cellIDs
+ * @param {number} lat
+ * @param {number} lng
  * @returns {array} Array of cell Ids
  */
-function getCellIDs(radius) {
-    var cell = new s2.S2CellId(new s2.S2LatLng(lat, lng)),
-        parentCell = cell.parent(15),
-        prevCell = parentCell.prev(),
-        nextCell = parentCell.next(),
-        cellIDs = [parentCell.id()];
+function getCellIDs(lat, lng) {
+    var origin = new s2.S2CellId(new s2.S2LatLng(lat, lng)).parent(15);
+    var cells = [origin.prev()];
 
-    for (var i = 0; i < radius; i++) {
-        cellIDs.unshift(prevCell.id());
-        cellIDs.push(nextCell.id());
-        prevCell = prevCell.prev();
-        nextCell = nextCell.next();
+    // Find previous cells based on latest
+    var previousCell = cells[0];
+    for (var i = 0; i < 7; i++) {
+        previousCell = previousCell.prev();
+        cells.unshift(previousCell);
     }
 
-    return cellIDs;
+     // Find next cells based on latest
+    var nextCell = cells[cells.length - 1];
+    for (var i = 0; i < 24; i++) {
+        nextCell = nextCell.next();
+
+        // Skip some to build perfect shape
+        if (i < 10 || i > 21) {
+            cells.push(nextCell);
+        }
+    }
+
+    return cells.map(cell => {
+        return cell.id();
+    });
 }
