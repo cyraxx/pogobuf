@@ -71,9 +71,9 @@ function Client() {
         return self.batchStart()
             .getPlayer()
             .getHatchedEggs()
-            .getInventory(0)
+            .getInventory()
             .checkAwardedBadges()
-            .downloadSettings('05daf51635c82611d1aac95c0b051d3ec088a930')
+            .downloadSettings()
             .batchCall();
     };
 
