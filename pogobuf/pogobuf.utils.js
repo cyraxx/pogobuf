@@ -167,24 +167,23 @@ module.exports = {
         }
         return null;
     },
-    
+
     /**
-     * Utility to get the Individual Values from pokemon
-     * @param {object} poke
+     * Utility method to get the Individual Values from Pokémon
+     * @param {object} pokemon - A pokemon_data structure
      * @returns {object}
      * @static
      */
-    
-    getIvsFromPokemon : function(poke) {
-          var att = poke.individual_attack;
-          var def = poke.individual_defense;
-          var stam = poke.individual_stamina;
-          var percent = (att + def + stam) / 45 * 100;
-          return {
+    getIVsFromPokemon: function(pokemon) {
+        var att = pokemon.individual_attack;
+        var def = pokemon.individual_defense;
+        var stam = pokemon.individual_stamina;
+        var percent = (att + def + stam) / 45 * 100;
+        return {
             att: att,
             def: def,
             stam: stam,
             percent: percent
-          };
+        };
     }
 };
