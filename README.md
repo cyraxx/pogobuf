@@ -282,6 +282,15 @@ data, eggs, and pokedex.
 | --- | --- | --- |
 | inventory | <code>object</code> | API response message as returned by `getInventory()` |
 
+### `splitItemTemplates(templates)` ⇒ <code>object</code> *(static)*
+Takes a `downloadItemTemplates()` response and separates it into the individual settings
+objects.
+data, eggs, and pokedex.
+
+| Param | Type | Description |
+| --- | --- | --- |
+| templates | <code>object</code> | API response message as returned by `downloadItemTemplates()` |
+
 ### `getEnumKeyByValue(enumObj, val)` ⇒ <code>string</code> *(static)*
 Utility method that finds the name of the key for a given enum value and makes it
 look a little nicer.
