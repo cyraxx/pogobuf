@@ -16,7 +16,6 @@
 
 const pogobuf = require('pogobuf'),
     POGOProtos = require('node-pogo-protos'),
-    S2 = require('s2-geometry').S2,
     nodeGeocoder = require('node-geocoder');
 
 var login = new pogobuf.PTCLogin(),
@@ -52,7 +51,7 @@ geocoder.geocode('2 Bryant St, San Francisco')
     })
     .then(() => {
         // Retrieve all map objects in the surrounding area
-        var cellIDs = getCellIDs(lat, lng);
+        var cellIDs = pogobuf.Utils.getCellIDs(lat, lng);
         return client.getMapObjects(cellIDs, Array(cellIDs.length).fill(0));
     })
     .then(mapObjects => {
@@ -92,39 +91,3 @@ geocoder.geocode('2 Bryant St, San Francisco')
         });
     })
     .catch(console.error);
-
-/**
- * Utility method to get all the S2 Cell IDs in a given radius.
- * @param {number} lat
- * @param {number} lng
- * @returns {array} Array of cell Ids
- */
-function getCellIDs(lat, lng) {
-    var origin = S2.S2Cell.FromLatLng({ lat: lat, lng: lng }, 15);
-    var cells = [];
-
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] - 2], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] - 1], origin.level).toHilbertQuadkey());
-    cells.push(origin.toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1]], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] + 1], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1]], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1]], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] + 2], origin.level).toHilbertQuadkey());
-    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
-
-    return cells.map((cell) => {
-        return S2.toId(cell);
-    });
-}

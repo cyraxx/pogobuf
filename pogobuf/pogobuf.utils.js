@@ -1,5 +1,7 @@
 'use strict';
 
+var s2 = require('s2-geometry').S2;
+
 /**
  * Various utilities for dealing with Pokémon Go API requests.
  * @class Utils
@@ -7,6 +9,43 @@
  */
 
 module.exports = {
+    /**
+     * Provides cell IDs of nearby cells based on the given lat lang
+     * @param {number} lat
+     * @param {number} lng
+     * @returns {array}
+     * @static
+     */
+    getCellIDs: function(lat, lng) {
+        var origin = s2.S2Cell.FromLatLng({ lat: lat, lng: lng }, 15);
+        var cells = [];
+
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] - 2], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] - 1], origin.level).toHilbertQuadkey());
+        cells.push(origin.toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1]], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] + 1], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1]], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1]], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] + 2], origin.level).toHilbertQuadkey());
+        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
+
+        return cells.map((cell) => {
+            return s2.toId(cell);
+        });
+    },
+
     /**
      * Takes a getInventory() response and separates it into pokemon, items, candies, player data,
      * eggs, and pokedex.
