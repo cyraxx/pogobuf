@@ -52,22 +52,9 @@ geocoder.geocode('2 Bryant St, San Francisco')
         return client.getMapObjects(cellIDs, Array(cellIDs.length).fill(0));
     })
     .then(mapObjects => {
-        // Get all gyms from all returned map cells, then retrieve all of their details in one batch call
-        client.batchStart();
-
-        mapObjects.map_cells.map(cell => cell.forts)
-            .reduce((a, b) => a.concat(b))
-            .filter(fort => fort.type === 0)
-            .forEach(fort => client.getGymDetails(fort.id, fort.latitude, fort.longitude));
-
-        return client.batchCall();
-    })
-    .then(gyms => {
-        // Display gym information
-        console.log('Gyms without converting: ', gyms);
-        console.log('Gyms with converting: ', pogobuf.Utils.convertLongs(gyms));
-    })
-    .catch(console.error);
+        console.log('Objects without converting: ', mapObjects);
+        console.log('Objects with converting: ', pogobuf.Utils.convertLongs(mapObjects));
+    }).catch(console.error);
 
 /**
  * Utility method to get all the S2 Cell IDs in a given radius.
