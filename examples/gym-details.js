@@ -16,7 +16,7 @@
 
 const pogobuf = require('pogobuf'),
     POGOProtos = require('node-pogo-protos'),
-    s2 = require('s2geometry-node'),
+    S2 = require('s2-geometry').S2,
     nodeGeocoder = require('node-geocoder');
 
 var login = new pogobuf.PTCLogin(),
@@ -100,28 +100,31 @@ geocoder.geocode('2 Bryant St, San Francisco')
  * @returns {array} Array of cell Ids
  */
 function getCellIDs(lat, lng) {
-    var origin = new s2.S2CellId(new s2.S2LatLng(lat, lng)).parent(15);
-    var cells = [origin.prev()];
+    var origin = S2.S2Cell.FromLatLng({ lat: lat, lng: lng }, 15);
+    var cells = [];
 
-    // Find previous cells based on latest
-    var previousCell = cells[0];
-    for (var i = 0; i < 7; i++) {
-        previousCell = previousCell.prev();
-        cells.unshift(previousCell);
-    }
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] - 2], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] - 2], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] - 1], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] - 1], origin.level).toHilbertQuadkey());
+    cells.push(origin.toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1]], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] + 1], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1]], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1]], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] + 1], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 2, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - 1, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] + 2], origin.level).toHilbertQuadkey());
+    cells.push(S2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + 1, origin.ij[1] + 2], origin.level).toHilbertQuadkey());
 
-     // Find next cells based on latest
-    var nextCell = cells[cells.length - 1];
-    for (var i = 0; i < 24; i++) {
-        nextCell = nextCell.next();
-
-        // Skip some to build perfect shape
-        if (i < 10 || i > 21) {
-            cells.push(nextCell);
-        }
-    }
-
-    return cells.map(cell => {
-        return cell.id();
+    return cells.map((cell) => {
+        return S2.toId(cell);
     });
 }
