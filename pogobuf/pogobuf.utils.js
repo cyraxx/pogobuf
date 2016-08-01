@@ -8,6 +8,8 @@ var s2 = require('s2-geometry').S2;
  * @memberof pogobuf
  */
 
+const Long = require('long');
+
 module.exports = {
     /**
      * Provides cell IDs of nearby cells based on the given coords
@@ -224,5 +226,26 @@ module.exports = {
             stam: stam,
             percent: percent
         };
+    },
+
+    /**
+     * Takes an object and converts all Long.js objects to integers
+     * @param {object} convertable - Any kind of object
+     * @returns {object}
+     * @static
+     */
+    convertLongs: function(convertable) {
+        if (!convertable || typeof convertable != 'object') return {};
+
+        for(var i in convertable) {
+            if(convertable.hasOwnProperty(i)) {
+                if(typeof convertable[i] == 'object' && !Long.isLong(convertable[i]))
+                    convertable[i] = this.convertLongs(convertable[i]);
+                else
+                    if(Long.isLong(convertable[i])) convertable[i] = (!isNaN(convertable[i].toString()) ? parseInt(convertable[i].toString()) : convertable[i].toString());
+            }
+        }
+
+        return convertable;
     }
 };
