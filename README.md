@@ -99,7 +99,7 @@ Sets the authentication type and token (required before making API calls).
 | authType | <code>string</code> | Authentication provider type (`ptc` or `google`) |
 | authToken | <code>string</code> | Authentication token received from authentication provider |
 
-#### `setPosition(latitude, longitude)`
+#### `setPosition(latitude, longitude, [altitude])`
 Sets the player's latitude and longitude.
 Note that this does not actually update the player location on the server, it only sets
 the location to be used in following API calls. To update the location on the server you
@@ -109,6 +109,7 @@ probably want to call `updatePlayer`.
 | --- | --- | --- |
 | latitude | <code>number</code> | The player's latitude |
 | longitude | <code>number</code> | The player's longitude |
+| altitude | <code>number</code> | The player's altitude _(optional)_ |
 
 #### `init()` ⇒ <code>Promise</code>
 Performs the initial API call.
@@ -283,14 +284,14 @@ auth token.
 | password | <code>string</code> |
 
 ## `pogobuf.Utils` methods
-### `getCellIDs(lat, lng)` ⇒ <code>array</code> *(static)*
+### `getCellIDs(lat, lng, [radius])` ⇒ <code>array</code> *(static)*
 Provides cell IDs of nearby cells based on the given coords and radius.
 
 | Param | Type | Description |
 | --- | --- | --- |
 | lat | <code>number</code> | Latitude |
 | lng | <code>number</code> | Longitude |
-| radius | <code>number</code> | Radius of the square |
+| radius | <code>number</code> | Radius of the square _(optional)_ |
 
 ### `splitInventory(inventory)` ⇒ <code>object</code> *(static)*
 Takes a `getInventory()` response and separates it into pokemon, items, candies, player

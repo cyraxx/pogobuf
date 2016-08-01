@@ -13,7 +13,7 @@ module.exports = {
      * Provides cell IDs of nearby cells based on the given coords and radius
      * @param {number} lat
      * @param {number} lng
-     * @param {number} radius
+     * @param {number} [radius=3]
      * @returns {array}
      * @static
      */
