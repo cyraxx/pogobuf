@@ -312,4 +312,4 @@ Utility method that searches for Long.js objects and turns them into integers an
 
 | Param | Type | Description |
 | --- | --- | --- |
-| convertable | <code>object</code> | An object |
+| convertable | <code>object</code> | An object to be searched for convertable longs |
