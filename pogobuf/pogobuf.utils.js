@@ -18,28 +18,41 @@ module.exports = {
      * @static
      */
     getCellIDs: function(lat, lng, radius) {
-        if(typeof radius === 'undefined') radius = 3;
-        
-        var origin = s2.S2Cell.FromLatLng({ lat: lat, lng: lng }, 15);
+        if (typeof radius === 'undefined') radius = 3;
+
+        /* eslint-disable new-cap */
+        var origin = s2.S2Cell.FromLatLng({
+            lat: lat,
+            lng: lng
+        }, 15);
         var cells = [];
-         
+
         cells.push(origin.toHilbertQuadkey()); // middle block
-         
-        for(var i = 1; i < radius; i++) {
+
+        for (var i = 1; i < radius; i++) {
             // cross in middle
-            cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] - i], origin.level).toHilbertQuadkey());
-            cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] + i], origin.level).toHilbertQuadkey());
-            cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - i, origin.ij[1]], origin.level).toHilbertQuadkey());
-            cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + i, origin.ij[1]], origin.level).toHilbertQuadkey());
-             
-            for(var j = 1; j < radius; j++) {
-                cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - j, origin.ij[1] - i], origin.level).toHilbertQuadkey());
-                cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + j, origin.ij[1] - i], origin.level).toHilbertQuadkey());
-                cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - j, origin.ij[1] + i], origin.level).toHilbertQuadkey());
-                cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + j, origin.ij[1] + i], origin.level).toHilbertQuadkey());
+            cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] - i], origin.level)
+                .toHilbertQuadkey());
+            cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1] + i], origin.level)
+                .toHilbertQuadkey());
+            cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - i, origin.ij[1]], origin.level)
+                .toHilbertQuadkey());
+            cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + i, origin.ij[1]], origin.level)
+                .toHilbertQuadkey());
+
+            for (var j = 1; j < radius; j++) {
+                cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - j, origin.ij[1] - i], origin.level)
+                    .toHilbertQuadkey());
+                cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + j, origin.ij[1] - i], origin.level)
+                    .toHilbertQuadkey());
+                cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] - j, origin.ij[1] + i], origin.level)
+                    .toHilbertQuadkey());
+                cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0] + j, origin.ij[1] + i], origin.level)
+                    .toHilbertQuadkey());
             }
         }
-         
+        /* eslint-enable new-cap */
+
         return cells.map((cell) => {
             return s2.toId(cell);
         });
