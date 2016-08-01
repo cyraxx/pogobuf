@@ -41,6 +41,20 @@ function GoogleLogin() {
     };
 
     /**
+     * Performs the Google login by skipping the password step and starting with the Master Token
+     * instead.
+     * @param {string} username
+     * @param {string} token
+     * @return {Promise}
+     */
+     this.loginWithToken = function(username, token) {
+        var loginData = { androidId: GOOGLE_LOGIN_ANDROID_ID, masterToken: token };
+        return self.getToken(username, loginData).then((authData) => {
+            return authData.Auth;
+        });
+     };
+
+    /**
      * Initialize Google Login
      * @param {string} username
      * @param {string} password
