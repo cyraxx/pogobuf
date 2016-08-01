@@ -18,6 +18,8 @@ module.exports = {
      * @static
      */
     getCellIDs: function(lat, lng, radius) {
+        if(typeof radius === 'undefined') radius = 3;
+        
         var origin = s2.S2Cell.FromLatLng({ lat: lat, lng: lng }, 15);
         var cells = [];
          
