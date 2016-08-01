@@ -21,7 +21,7 @@ module.exports = {
         var origin = s2.S2Cell.FromLatLng({ lat: lat, lng: lng }, 15);
         var cells = [];
          
-        cells.push(s2.S2Cell.FromFaceIJ(origin.face, [origin.ij[0], origin.ij[1]], origin.level).toHilbertQuadkey()); // middle block
+        cells.push(origin.toHilbertQuadkey()); // middle block
          
         for(var i = 1; i < radius; i++) {
             // cross in middle
