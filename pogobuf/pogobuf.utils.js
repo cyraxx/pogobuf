@@ -203,7 +203,7 @@ module.exports = {
                 if(typeof convertable[i] == 'object' && !Long.isLong(convertable[i]))
                     convertable[i] = this.convertLongs(convertable[i]);
                 else
-                    if(Long.isLong(convertable[i])) convertable[i] = parseInt(convertable[i].toString());
+                    if(Long.isLong(convertable[i])) convertable[i] = (!isNaN(convertable[i].toString()) ? parseInt(convertable[i].toString()) : convertable[i].toString());
             }
         }
 
