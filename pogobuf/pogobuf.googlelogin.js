@@ -42,7 +42,7 @@ function GoogleLogin() {
 
     /**
      * Performs the Google login by skipping the password step and starting with the Master Token
-     * instead.
+     * instead. Returns a Promise that will be resolved with the auth token.
      * @param {string} username
      * @param {string} token
      * @return {Promise}
