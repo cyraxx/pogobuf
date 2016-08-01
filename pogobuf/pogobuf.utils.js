@@ -10,7 +10,7 @@ var s2 = require('s2-geometry').S2;
 
 module.exports = {
     /**
-     * Provides cell IDs of nearby cells based on the given lat lang
+     * Provides cell IDs of nearby cells based on the given coords
      * @param {number} lat
      * @param {number} lng
      * @returns {array}
