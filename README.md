@@ -263,6 +263,15 @@ auth token.
 | username | <code>string</code> |
 | password | <code>string</code> |
 
+#### `loginWithToken(username, token)` ⇒ <code>Promise</code>
+Performs the Google login by skipping the password step and starting with the Master Token
+instead. Returns a Promise that will be resolved with the auth token.
+
+| Param | Type |
+| --- | --- |
+| username | <code>string</code> |
+| token | <code>string</code> |
+
 ## `pogobuf.PTCLogin` methods
 #### `login(username, password)` ⇒ <code>Promise</code>
 Performs the PTC login process and returns a Promise that will be resolved with the
