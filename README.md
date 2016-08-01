@@ -274,6 +274,14 @@ auth token.
 | password | <code>string</code> |
 
 ## `pogobuf.Utils` methods
+### `getCellIDs(lat, lng)` ⇒ <code>array</code> *(static)*
+Provides cell IDs of nearby cells based on the given coords.
+
+| Param | Type | Description |
+| --- | --- | --- |
+| lat | <code>number</code> | Latitude |
+| lng | <code>number</code> | Longitude |
+
 ### `splitInventory(inventory)` ⇒ <code>object</code> *(static)*
 Takes a `getInventory()` response and separates it into pokemon, items, candies, player
 data, eggs, and pokedex.
