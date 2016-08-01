@@ -306,3 +306,10 @@ Utility method to get the Individual Values from Pokémon
 | Param | Type | Description |
 | --- | --- | --- |
 | pokemon | <code>object</code> | A `pokemon_data` structure |
+
+### `convertLongs(object)` ⇒ <code>object</code> *(static)*
+Utility method that searches for Long.js objects and turns them into integers and strings.
+
+| Param | Type | Description |
+| --- | --- | --- |
+| convertable | <code>object</code> | An object |
