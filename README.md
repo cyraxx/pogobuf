@@ -130,6 +130,13 @@ Sets the maximum times to try RPC calls until they succeed (default is 5 tries).
 | --- | --- |
 | maxTries | <code>integer</code> |
 
+#### `setProxy(proxy)`
+Sets a proxy address to use for the HTTPS RPC requests.
+
+| Param | Type |
+| --- | --- |
+| proxy | <code>string</code> |
+
 ## `pogobuf.Client` Pokémon Go API methods
 #### `addFortModifier(modifierItemID, fortID)` ⇒ <code>Promise</code>
 #### `attackGym(gymID, battleID, attackActions, lastRetrievedAction)` ⇒ <code>Promise</code>

@@ -122,6 +122,14 @@ function Client() {
     };
 
     /**
+     * Sets a proxy address to use for the HTTPS RPC requests.
+     * @param {string} proxy
+     */
+    this.setProxy = function(proxy) {
+        self.proxy = proxy;
+    };
+
+    /**
      * Sets a callback to be called for any envelope or request just before it is sent to
      * the server (mostly for debugging purposes).
      * @deprecated Use the raw-request event instead
@@ -868,6 +876,7 @@ function Client() {
             self.request({
                 method: 'POST',
                 url: self.endpoint,
+                proxy: self.proxy,
                 body: envelope.toBuffer()
             }, (err, response, body) => {
                 if (err) {
