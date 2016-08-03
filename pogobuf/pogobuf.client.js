@@ -759,22 +759,17 @@ function Client() {
     };
 
     /**
-     * Generates a request ID based on a random number then increments by one each call
+     * Generates a random request ID
      * @private
      * @return {Long}
      */
     this.getRequestID = function() {
-        if (self.request_id) {
-            self.request_id = self.request_id.add(1);
-        } else {
-            var bytes = crypto.randomBytes(8);
-            self.request_id = Long.fromBits(
-                bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
-                bytes[4] << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7],
-                true
-            );
-        }
-        return self.request_id;
+        var bytes = crypto.randomBytes(8);
+        return Long.fromBits(
+            bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
+            bytes[4] << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7],
+            true
+        );
     };
 
     /**
