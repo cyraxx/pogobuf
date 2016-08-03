@@ -15,13 +15,6 @@ function PTCLogin() {
     }
     const self = this;
 
-    this.request = request.defaults({
-        headers: {
-            'User-Agent': 'Niantic App'
-        },
-        jar: request.jar()
-    });
-
     /**
      * Performs the PTC login process and returns a Promise that will be resolved with the
      * auth token.
@@ -30,6 +23,13 @@ function PTCLogin() {
      * @return {Promise}
      */
     this.login = function(username, password) {
+        self.request = request.defaults({
+            headers: {
+                'User-Agent': 'Niantic App'
+            },
+            jar: request.jar()
+        });
+
         return self.getSession()
             .then(sessionData => self.getTicket(sessionData, username, password))
             .then(self.getToken);
