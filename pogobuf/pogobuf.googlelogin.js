@@ -17,13 +17,11 @@ function GoogleLogin() {
     /**
      * Based of https://github.com/tejado/pgoapi/blob/master/pgoapi/auth_google.py#L33
      */
-    /* eslint-disable max-len */
     const GOOGLE_LOGIN_ANDROID_ID = '9774d56d682e549c';
     const GOOGLE_LOGIN_SERVICE =
         'audience:server:client_id:848232511240-7so421jotr2609rmqakceuu1luuq0ptb.apps.googleusercontent.com';
     const GOOGLE_LOGIN_APP = 'com.nianticlabs.pokemongo';
     const GOOGLE_LOGIN_CLIENT_SIG = '321187995bc7cdc2b5fc91b11a96e2baa8602c62';
-    /* eslint-enable max-len */
 
     /**
      * Performs the Google Login using Android Device and returns a Promise that will be resolved
@@ -47,12 +45,15 @@ function GoogleLogin() {
      * @param {string} token
      * @return {Promise}
      */
-     this.loginWithToken = function(username, token) {
-        var loginData = { androidId: GOOGLE_LOGIN_ANDROID_ID, masterToken: token };
+    this.loginWithToken = function(username, token) {
+        var loginData = {
+            androidId: GOOGLE_LOGIN_ANDROID_ID,
+            masterToken: token
+        };
         return self.getToken(username, loginData).then((authData) => {
             return authData.Auth;
         });
-     };
+    };
 
     /**
      * Initialize Google Login
