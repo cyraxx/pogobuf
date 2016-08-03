@@ -15,5 +15,5 @@
 * Uses the excellent [POGOProtos](https://github.com/AeonLucid/POGOProtos) (via [node-pogo-protos](https://github.com/cyraxx/node-pogo-protos))
 * Based on prior work by [tejado](https://github.com/tejado/pgoapi) and others
 
-# Documentation
-You can find the documentation in the [wiki](https://github.com/cyraxx/pogobuf/wiki).
+# Documentation and usage
+You can find the documentation and other information in the [wiki](https://github.com/cyraxx/pogobuf/wiki).
