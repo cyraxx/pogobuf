@@ -15,6 +15,7 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
+const DEFAULT_MAP_OBJECTS_DELAY = 5;
 
 /**
  * Pokémon Go RPC client.
@@ -62,6 +63,7 @@ function Client() {
      */
     this.init = function() {
         self.signatureBuilder = new pogoSignature.Builder();
+        self.lastMapObjectsCall = 0;
 
         /*
             The response to the first RPC call does not contain any response messages even though
@@ -76,8 +78,9 @@ function Client() {
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()
-            .downloadSettings('54b359c97e46900f87211ef6e6dd0b7f2a3ea1f5')
-            .batchCall();
+            .downloadSettings()
+            .batchCall()
+            .then(self.processInitialData);
     };
 
     /**
@@ -129,6 +132,16 @@ function Client() {
      */
     this.setProxy = function(proxy) {
         self.proxy = proxy;
+    };
+
+    /**
+     * Enables or disables the built-in throttling of getMapObjects() calls based on the
+     * minimum refresh setting received from the server. Enabled by default, disable if you
+     * want to manage your own throttling.
+     * @param {boolean} enable
+     */
+    this.setMapObjectsThrottlingEnabled = function(enable) {
+        self.mapObjectsThrottlingEnabled = enable;
     };
 
     /**
@@ -744,8 +757,9 @@ function Client() {
         encoding: null
     });
 
-    this.endpoint = INITIAL_ENDPOINT;
     this.maxTries = 5;
+    this.mapObjectsThrottlingEnabled = true;
+    this.mapObjectsMinDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -890,6 +904,19 @@ function Client() {
      *     or true if there aren't any
      */
     this.callRPC = function(requests, envelope) {
+        // If the requests include a map objects request, make sure the minimum delay
+        // since the last call has passed
+        if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
+            var now = new Date().getTime(),
+                delayNeeded = self.lastMapObjectsCall + self.mapObjectsMinDelay - now;
+
+            if (delayNeeded > 0 && self.mapObjectsThrottlingEnabled) {
+                return Promise.delay(delayNeeded).then(() => self.callRPC(requests, envelope));
+            }
+
+            self.lastMapObjectsCall = now;
+        }
+
         if (self.maxTries <= 1) return self.tryCallRPC(requests, envelope);
 
         return retry(() => self.tryCallRPC(requests, envelope), {
@@ -1033,6 +1060,28 @@ function Client() {
                     else resolve(responses);
                 });
             }));
+    };
+
+    /**
+     * Processes the data received from the initial API call during init().
+     * @private
+     * @param {Object[]} responses - Respones from API call
+     * @return {Object[]} respones - Unomdified responses (to send back to Promise)
+     */
+    this.processInitialData = function(responses) {
+        // Extract the minimum delay of getMapObjects()
+        if (responses.length >= 5) {
+            var settingsResponse = responses[4];
+            if (!settingsResponse.error &&
+                settingsResponse.settings &&
+                settingsResponse.settings.map_settings &&
+                settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
+            ) {
+                self.mapObjectsMinDelay =
+                    settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000;
+            }
+        }
+        return responses;
     };
 }
 
