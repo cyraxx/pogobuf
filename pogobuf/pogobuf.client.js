@@ -70,11 +70,11 @@ function Client() {
         self.endpoint = INITIAL_ENDPOINT;
 
         return self.batchStart()
-            .getPlayer()
+            .getPlayer('0.31.1')
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()
-            .downloadSettings()
+            .downloadSettings('54b359c97e46900f87211ef6e6dd0b7f2a3ea1f5')
             .batchCall();
     };
 
@@ -164,9 +164,12 @@ function Client() {
         });
     };
 
-    this.getPlayer = function() {
+    this.getPlayer = function(appVersion) {
         return self.callOrChain({
             type: RequestType.GET_PLAYER,
+            message: new RequestMessages.GetPlayerMessage({
+                app_version: appVersion
+            }),
             responseType: Responses.GetPlayerResponse
         });
     };
