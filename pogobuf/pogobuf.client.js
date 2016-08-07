@@ -8,8 +8,8 @@ const crypto = require('crypto'),
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
-    Utils = require('./pogobuf.utils.js');
-
+    Utils = require('./pogobuf.utils.js'),
+    AuthProvider = require('./authProvider.js');
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
@@ -22,11 +22,13 @@ const DEFAULT_MAP_OBJECTS_DELAY = 5;
  * @class Client
  * @memberof pogobuf
  */
-function Client() {
+function Client(authType, username, password) {
     if (!(this instanceof Client)) {
-        return new Client();
+        return new Client(authType, username, password);
     }
     const self = this;
+
+    const authProvider = new AuthProvider(authType, username, password);
 
     /**
      * PUBLIC METHODS
@@ -37,7 +39,7 @@ function Client() {
      * @param {string} authType - Authentication provider type (ptc or google)
      * @param {string} authToken - Authentication token received from authentication provider
      */
-    this.setAuthInfo = function(authType, authToken) {
+    this.setAuthInfo = function (authType, authToken) {
         self.authType = authType;
         self.authToken = authToken;
     };
@@ -51,7 +53,7 @@ function Client() {
      * @param {number} longitude - The player's longitude
      * @param {number} [altitude=0] - The player's altitude
      */
-    this.setPosition = function(latitude, longitude, altitude) {
+    this.setPosition = function (latitude, longitude, altitude) {
         self.playerLatitude = latitude;
         self.playerLongitude = longitude;
         self.playerAltitude = altitude || 0;
@@ -61,7 +63,7 @@ function Client() {
      * Performs the initial API call.
      * @return {Promise} promise
      */
-    this.init = function() {
+    this.init = function () {
         self.signatureBuilder = new pogoSignature.Builder();
         self.lastMapObjectsCall = 0;
 
@@ -73,14 +75,25 @@ function Client() {
         */
         self.endpoint = INITIAL_ENDPOINT;
 
-        return self.batchStart()
-            .getPlayer('0.31.1')
-            .getHatchedEggs()
-            .getInventory()
-            .checkAwardedBadges()
-            .downloadSettings()
-            .batchCall()
-            .then(self.processInitialData);
+        return authProvider.authenticate()
+            .then(function (data) {
+                self.setAuthInfo(data.authType, data.token);
+                console.log('authenticated!');
+                console.log(data.token);
+                return self.batchStart()
+                    .getPlayer('0.31.1')
+                    .getHatchedEggs()
+                    .getInventory()
+                    .checkAwardedBadges()
+                    .downloadSettings()
+                    .batchCall()
+                    .then(self.processInitialData);
+            },
+            function (error) {
+                console.log(error);
+            });
+
+
     };
 
     /**
@@ -88,7 +101,7 @@ function Client() {
      * {@link #batchCall} is called.
      * @return {Client} this
      */
-    this.batchStart = function() {
+    this.batchStart = function () {
         if (!self.batchRequests) {
             self.batchRequests = [];
         }
@@ -98,7 +111,7 @@ function Client() {
     /**
      * Clears the list of batched requests and aborts batch mode.
      */
-    this.batchClear = function() {
+    this.batchClear = function () {
         delete self.batchRequests;
     };
 
@@ -106,7 +119,7 @@ function Client() {
      * Executes any batched requests.
      * @return {Promise}
      */
-    this.batchCall = function() {
+    this.batchCall = function () {
         if (!self.batchRequests || !self.batchRequests.length) {
             return Promise.resolve(false);
         }
@@ -122,7 +135,7 @@ function Client() {
      * Set to 1 to disable retry logic.
      * @param {integer} maxTries
      */
-    this.setMaxTries = function(maxTries) {
+    this.setMaxTries = function (maxTries) {
         self.maxTries = maxTries;
     };
 
@@ -130,7 +143,7 @@ function Client() {
      * Sets a proxy address to use for the HTTPS RPC requests.
      * @param {string} proxy
      */
-    this.setProxy = function(proxy) {
+    this.setProxy = function (proxy) {
         self.proxy = proxy;
     };
 
@@ -140,7 +153,7 @@ function Client() {
      * want to manage your own throttling.
      * @param {boolean} enable
      */
-    this.setMapObjectsThrottlingEnabled = function(enable) {
+    this.setMapObjectsThrottlingEnabled = function (enable) {
         self.mapObjectsThrottlingEnabled = enable;
     };
 
@@ -150,7 +163,7 @@ function Client() {
      * @deprecated Use the raw-request event instead
      * @param {function} callback - function to call on requests
      */
-    this.setRequestCallback = function(callback) {
+    this.setRequestCallback = function (callback) {
         self.on('raw-request', callback);
     };
 
@@ -160,7 +173,7 @@ function Client() {
      * @deprecated Use the raw-response event instead
      * @param {function} callback - function to call on responses
      */
-    this.setResponseCallback = function(callback) {
+    this.setResponseCallback = function (callback) {
         self.on('raw-response', callback);
     };
 
@@ -168,7 +181,7 @@ function Client() {
      * API CALLS (in order of RequestType enum)
      */
 
-    this.playerUpdate = function() {
+    this.playerUpdate = function () {
         return self.callOrChain({
             type: RequestType.PLAYER_UPDATE,
             message: new RequestMessages.PlayerUpdateMessage({
@@ -179,7 +192,7 @@ function Client() {
         });
     };
 
-    this.getPlayer = function(appVersion) {
+    this.getPlayer = function (appVersion) {
         return self.callOrChain({
             type: RequestType.GET_PLAYER,
             message: new RequestMessages.GetPlayerMessage({
@@ -189,7 +202,7 @@ function Client() {
         });
     };
 
-    this.getInventory = function(lastTimestamp) {
+    this.getInventory = function (lastTimestamp) {
         return self.callOrChain({
             type: RequestType.GET_INVENTORY,
             message: new RequestMessages.GetInventoryMessage({
@@ -199,7 +212,7 @@ function Client() {
         });
     };
 
-    this.downloadSettings = function(hash) {
+    this.downloadSettings = function (hash) {
         return self.callOrChain({
             type: RequestType.DOWNLOAD_SETTINGS,
             message: new RequestMessages.DownloadSettingsMessage({
@@ -209,14 +222,14 @@ function Client() {
         });
     };
 
-    this.downloadItemTemplates = function() {
+    this.downloadItemTemplates = function () {
         return self.callOrChain({
             type: RequestType.DOWNLOAD_ITEM_TEMPLATES,
             responseType: Responses.DownloadItemTemplatesResponse
         });
     };
 
-    this.downloadRemoteConfigVersion = function(platform, deviceManufacturer, deviceModel, locale, appVersion) {
+    this.downloadRemoteConfigVersion = function (platform, deviceManufacturer, deviceModel, locale, appVersion) {
         return self.callOrChain({
             type: RequestType.DOWNLOAD_REMOTE_CONFIG_VERSION,
             message: new RequestMessages.DownloadRemoteConfigVersionMessage({
@@ -230,7 +243,7 @@ function Client() {
         });
     };
 
-    this.fortSearch = function(fortID, fortLatitude, fortLongitude) {
+    this.fortSearch = function (fortID, fortLatitude, fortLongitude) {
         return self.callOrChain({
             type: RequestType.FORT_SEARCH,
             message: new RequestMessages.FortSearchMessage({
@@ -244,7 +257,7 @@ function Client() {
         });
     };
 
-    this.encounter = function(encounterID, spawnPointID) {
+    this.encounter = function (encounterID, spawnPointID) {
         return self.callOrChain({
             type: RequestType.ENCOUNTER,
             message: new RequestMessages.EncounterMessage({
@@ -257,7 +270,7 @@ function Client() {
         });
     };
 
-    this.catchPokemon = function(encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon,
+    this.catchPokemon = function (encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon,
         spinModifier, normalizedHitPosition) {
         return self.callOrChain({
             type: RequestType.CATCH_POKEMON,
@@ -274,7 +287,7 @@ function Client() {
         });
     };
 
-    this.fortDetails = function(fortID, fortLatitude, fortLongitude) {
+    this.fortDetails = function (fortID, fortLatitude, fortLongitude) {
         return self.callOrChain({
             type: RequestType.FORT_DETAILS,
             message: new RequestMessages.FortDetailsMessage({
@@ -286,7 +299,7 @@ function Client() {
         });
     };
 
-    this.getMapObjects = function(cellIDs, sinceTimestamps) {
+    this.getMapObjects = function (cellIDs, sinceTimestamps) {
         return self.callOrChain({
             type: RequestType.GET_MAP_OBJECTS,
             message: new RequestMessages.GetMapObjectsMessage({
@@ -299,7 +312,7 @@ function Client() {
         });
     };
 
-    this.fortDeployPokemon = function(fortID, pokemonID) {
+    this.fortDeployPokemon = function (fortID, pokemonID) {
         return self.callOrChain({
             type: RequestType.FORT_DEPLOY_POKEMON,
             message: new RequestMessages.FortDeployPokemonMessage({
@@ -312,7 +325,7 @@ function Client() {
         });
     };
 
-    this.fortRecallPokemon = function(fortID, pokemonID) {
+    this.fortRecallPokemon = function (fortID, pokemonID) {
         return self.callOrChain({
             type: RequestType.FORT_RECALL_POKEMON,
             message: new RequestMessages.FortRecallPokemonMessage({
@@ -325,7 +338,7 @@ function Client() {
         });
     };
 
-    this.releasePokemon = function(pokemonID) {
+    this.releasePokemon = function (pokemonID) {
         return self.callOrChain({
             type: RequestType.RELEASE_POKEMON,
             message: new RequestMessages.ReleasePokemonMessage({
@@ -335,7 +348,7 @@ function Client() {
         });
     };
 
-    this.useItemPotion = function(itemID, pokemonID) {
+    this.useItemPotion = function (itemID, pokemonID) {
         return self.callOrChain({
             type: RequestType.USE_ITEM_POTION,
             message: new RequestMessages.UseItemPotionMessage({
@@ -346,7 +359,7 @@ function Client() {
         });
     };
 
-    this.useItemCapture = function(itemID, encounterID, spawnPointID) {
+    this.useItemCapture = function (itemID, encounterID, spawnPointID) {
         return self.callOrChain({
             type: RequestType.USE_ITEM_CAPTURE,
             message: new RequestMessages.UseItemCaptureMessage({
@@ -358,7 +371,7 @@ function Client() {
         });
     };
 
-    this.useItemRevive = function(itemID, pokemonID) {
+    this.useItemRevive = function (itemID, pokemonID) {
         return self.callOrChain({
             type: RequestType.USE_ITEM_REVIVE,
             message: new RequestMessages.UseItemReviveMessage({
@@ -369,7 +382,7 @@ function Client() {
         });
     };
 
-    this.getPlayerProfile = function(playerName) {
+    this.getPlayerProfile = function (playerName) {
         return self.callOrChain({
             type: RequestType.GET_PLAYER_PROFILE,
             message: new RequestMessages.GetPlayerProfileMessage({
@@ -379,7 +392,7 @@ function Client() {
         });
     };
 
-    this.evolvePokemon = function(pokemonID) {
+    this.evolvePokemon = function (pokemonID) {
         return self.callOrChain({
             type: RequestType.EVOLVE_POKEMON,
             message: new RequestMessages.EvolvePokemonMessage({
@@ -389,14 +402,14 @@ function Client() {
         });
     };
 
-    this.getHatchedEggs = function() {
+    this.getHatchedEggs = function () {
         return self.callOrChain({
             type: RequestType.GET_HATCHED_EGGS,
             responseType: Responses.GetHatchedEggsResponse
         });
     };
 
-    this.encounterTutorialComplete = function(pokemonID) {
+    this.encounterTutorialComplete = function (pokemonID) {
         return self.callOrChain({
             type: RequestType.ENCOUNTER_TUTORIAL_COMPLETE,
             message: new RequestMessages.EncounterTutorialCompleteMessage({
@@ -406,7 +419,7 @@ function Client() {
         });
     };
 
-    this.levelUpRewards = function(level) {
+    this.levelUpRewards = function (level) {
         return self.callOrChain({
             type: RequestType.LEVEL_UP_REWARDS,
             message: new RequestMessages.LevelUpRewardsMessage({
@@ -416,14 +429,14 @@ function Client() {
         });
     };
 
-    this.checkAwardedBadges = function() {
+    this.checkAwardedBadges = function () {
         return self.callOrChain({
             type: RequestType.CHECK_AWARDED_BADGES,
             responseType: Responses.CheckAwardedBadgesResponse
         });
     };
 
-    this.useItemGym = function(itemID, gymID) {
+    this.useItemGym = function (itemID, gymID) {
         return self.callOrChain({
             type: RequestType.USE_ITEM_GYM,
             message: new RequestMessages.UseItemGymMessage({
@@ -436,7 +449,7 @@ function Client() {
         });
     };
 
-    this.getGymDetails = function(gymID, gymLatitude, gymLongitude) {
+    this.getGymDetails = function (gymID, gymLatitude, gymLongitude) {
         return self.callOrChain({
             type: RequestType.GET_GYM_DETAILS,
             message: new RequestMessages.GetGymDetailsMessage({
@@ -450,7 +463,7 @@ function Client() {
         });
     };
 
-    this.startGymBattle = function(gymID, attackingPokemonIDs, defendingPokemonID) {
+    this.startGymBattle = function (gymID, attackingPokemonIDs, defendingPokemonID) {
         return self.callOrChain({
             type: RequestType.START_GYM_BATTLE,
             message: new RequestMessages.StartGymBattleMessage({
@@ -464,7 +477,7 @@ function Client() {
         });
     };
 
-    this.attackGym = function(gymID, battleID, attackActions, lastRetrievedAction) {
+    this.attackGym = function (gymID, battleID, attackActions, lastRetrievedAction) {
         return self.callOrChain({
             type: RequestType.ATTACK_GYM,
             message: new RequestMessages.AttackGymMessage({
@@ -479,7 +492,7 @@ function Client() {
         });
     };
 
-    this.recycleInventoryItem = function(itemID, count) {
+    this.recycleInventoryItem = function (itemID, count) {
         return self.callOrChain({
             type: RequestType.RECYCLE_INVENTORY_ITEM,
             message: new RequestMessages.RecycleInventoryItemMessage({
@@ -490,14 +503,14 @@ function Client() {
         });
     };
 
-    this.collectDailyBonus = function() {
+    this.collectDailyBonus = function () {
         return self.callOrChain({
             type: RequestType.COLLECT_DAILY_BONUS,
             responseType: Responses.CollectDailyBonusResponse
         });
     };
 
-    this.useItemXPBoost = function(itemID) {
+    this.useItemXPBoost = function (itemID) {
         return self.callOrChain({
             type: RequestType.USE_ITEM_XP_BOOST,
             message: new RequestMessages.UseItemXpBoostMessage({
@@ -507,7 +520,7 @@ function Client() {
         });
     };
 
-    this.useItemEggIncubator = function(itemID, pokemonID) {
+    this.useItemEggIncubator = function (itemID, pokemonID) {
         return self.callOrChain({
             type: RequestType.USE_ITEM_EGG_INCUBATOR,
             message: new RequestMessages.UseItemEggIncubatorMessage({
@@ -518,7 +531,7 @@ function Client() {
         });
     };
 
-    this.useIncense = function(itemID) {
+    this.useIncense = function (itemID) {
         return self.callOrChain({
             type: RequestType.USE_INCENSE,
             message: new RequestMessages.UseIncenseMessage({
@@ -528,7 +541,7 @@ function Client() {
         });
     };
 
-    this.getIncensePokemon = function() {
+    this.getIncensePokemon = function () {
         return self.callOrChain({
             type: RequestType.GET_INCENSE_POKEMON,
             message: new RequestMessages.GetIncensePokemonMessage({
@@ -539,7 +552,7 @@ function Client() {
         });
     };
 
-    this.incenseEncounter = function(encounterID, encounterLocation) {
+    this.incenseEncounter = function (encounterID, encounterLocation) {
         return self.callOrChain({
             type: RequestType.INCENSE_ENCOUNTER,
             message: new RequestMessages.IncenseEncounterMessage({
@@ -550,7 +563,7 @@ function Client() {
         });
     };
 
-    this.addFortModifier = function(modifierItemID, fortID) {
+    this.addFortModifier = function (modifierItemID, fortID) {
         return self.callOrChain({
             type: RequestType.ADD_FORT_MODIFIER,
             message: new RequestMessages.AddFortModifierMessage({
@@ -562,7 +575,7 @@ function Client() {
         });
     };
 
-    this.diskEncounter = function(encounterID, fortID) {
+    this.diskEncounter = function (encounterID, fortID) {
         return self.callOrChain({
             type: RequestType.DISK_ENCOUNTER,
             message: new RequestMessages.DiskEncounterMessage({
@@ -575,14 +588,14 @@ function Client() {
         });
     };
 
-    this.collectDailyDefenderBonus = function() {
+    this.collectDailyDefenderBonus = function () {
         return self.callOrChain({
             type: RequestType.COLLECT_DAILY_DEFENDER_BONUS,
             responseType: Responses.CollectDailyDefenderBonusResponse
         });
     };
 
-    this.upgradePokemon = function(pokemonID) {
+    this.upgradePokemon = function (pokemonID) {
         return self.callOrChain({
             type: RequestType.UPGRADE_POKEMON,
             message: new RequestMessages.UpgradePokemonMessage({
@@ -592,7 +605,7 @@ function Client() {
         });
     };
 
-    this.setFavoritePokemon = function(pokemonID, isFavorite) {
+    this.setFavoritePokemon = function (pokemonID, isFavorite) {
         return self.callOrChain({
             type: RequestType.SET_FAVORITE_POKEMON,
             message: new RequestMessages.SetFavoritePokemonMessage({
@@ -603,7 +616,7 @@ function Client() {
         });
     };
 
-    this.nicknamePokemon = function(pokemonID, nickname) {
+    this.nicknamePokemon = function (pokemonID, nickname) {
         return self.callOrChain({
             type: RequestType.NICKNAME_POKEMON,
             message: new RequestMessages.NicknamePokemonMessage({
@@ -614,7 +627,7 @@ function Client() {
         });
     };
 
-    this.equipBadge = function(badgeType) {
+    this.equipBadge = function (badgeType) {
         return self.callOrChain({
             type: RequestType.EQUIP_BADGE,
             message: new RequestMessages.EquipBadgeMessage({
@@ -624,7 +637,7 @@ function Client() {
         });
     };
 
-    this.setContactSettings = function(sendMarketingEmails, sendPushNotifications) {
+    this.setContactSettings = function (sendMarketingEmails, sendPushNotifications) {
         return self.callOrChain({
             type: RequestType.SET_CONTACT_SETTINGS,
             message: new RequestMessages.SetContactSettingsMessage({
@@ -637,7 +650,7 @@ function Client() {
         });
     };
 
-    this.getAssetDigest = function(platform, deviceManufacturer, deviceModel, locale, appVersion) {
+    this.getAssetDigest = function (platform, deviceManufacturer, deviceModel, locale, appVersion) {
         return self.callOrChain({
             type: RequestType.GET_ASSET_DIGEST,
             message: new RequestMessages.GetAssetDigestMessage({
@@ -651,7 +664,7 @@ function Client() {
         });
     };
 
-    this.getDownloadURLs = function(assetIDs) {
+    this.getDownloadURLs = function (assetIDs) {
         return self.callOrChain({
             type: RequestType.GET_DOWNLOAD_URLS,
             message: new RequestMessages.GetDownloadUrlsMessage({
@@ -661,14 +674,14 @@ function Client() {
         });
     };
 
-    this.getSuggestedCodenames = function() {
+    this.getSuggestedCodenames = function () {
         return self.callOrChain({
             type: RequestType.GET_SUGGESTED_CODENAMES,
             responseType: Responses.GetSuggestedCodenamesResponse
         });
     };
 
-    this.checkCodenameAvailable = function(codename) {
+    this.checkCodenameAvailable = function (codename) {
         return self.callOrChain({
             type: RequestType.CHECK_CODENAME_AVAILABLE,
             message: new RequestMessages.CheckCodenameAvailableMessage({
@@ -678,7 +691,7 @@ function Client() {
         });
     };
 
-    this.claimCodename = function(codename) {
+    this.claimCodename = function (codename) {
         return self.callOrChain({
             type: RequestType.CLAIM_CODENAME,
             message: new RequestMessages.ClaimCodenameMessage({
@@ -688,7 +701,7 @@ function Client() {
         });
     };
 
-    this.setAvatar = function(skin, hair, shirt, pants, hat, shoes, gender, eyes, backpack) {
+    this.setAvatar = function (skin, hair, shirt, pants, hat, shoes, gender, eyes, backpack) {
         return self.callOrChain({
             type: RequestType.SET_AVATAR,
             message: new RequestMessages.SetAvatarMessage({
@@ -708,7 +721,7 @@ function Client() {
         });
     };
 
-    this.setPlayerTeam = function(teamColor) {
+    this.setPlayerTeam = function (teamColor) {
         return self.callOrChain({
             type: RequestType.SET_PLAYER_TEAM,
             message: new RequestMessages.SetPlayerTeamMessage({
@@ -718,7 +731,7 @@ function Client() {
         });
     };
 
-    this.markTutorialComplete = function(tutorialsCompleted, sendMarketingEmails, sendPushNotifications) {
+    this.markTutorialComplete = function (tutorialsCompleted, sendMarketingEmails, sendPushNotifications) {
         return self.callOrChain({
             type: RequestType.MARK_TUTORIAL_COMPLETE,
             message: new RequestMessages.MarkTutorialCompleteMessage({
@@ -730,14 +743,14 @@ function Client() {
         });
     };
 
-    this.echo = function() {
+    this.echo = function () {
         return self.callOrChain({
             type: RequestType.ECHO,
             responseType: Responses.EchoResponse
         });
     };
 
-    this.sfidaActionLog = function() {
+    this.sfidaActionLog = function () {
         return self.callOrChain({
             type: RequestType.SFIDA_ACTION_LOG,
             responseType: Responses.SfidaActionLogResponse
@@ -768,7 +781,7 @@ function Client() {
      * @param {object} requestMessage - RPC request object
      * @return {Promise|Client}
      */
-    this.callOrChain = function(requestMessage) {
+    this.callOrChain = function (requestMessage) {
         if (self.batchRequests) {
             self.batchRequests.push(requestMessage);
             return self;
@@ -782,7 +795,7 @@ function Client() {
      * @private
      * @return {Long}
      */
-    this.getRequestID = function() {
+    this.getRequestID = function () {
         var bytes = crypto.randomBytes(8);
         return Long.fromBits(
             bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
@@ -797,7 +810,7 @@ function Client() {
      * @param {Object[]} requests - Array of requests to build
      * @return {POGOProtos.Networking.Envelopes.RequestEnvelope}
      */
-    this.buildEnvelope = function(requests) {
+    this.buildEnvelope = function (requests) {
         var envelopeData = {
             status_code: 2,
             request_id: self.getRequestID(),
@@ -858,7 +871,7 @@ function Client() {
      * @param {RequestEnvelope} [envelope] - Pre-built request envelope to sign
      * @return {Promise} - A Promise that will be resolved with a RequestEnvelope instance
      */
-    this.buildSignedEnvelope = function(requests, envelope) {
+    this.buildSignedEnvelope = function (requests, envelope) {
         return new Promise((resolve, reject) => {
             if (!envelope) {
                 try {
@@ -903,7 +916,7 @@ function Client() {
      * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
      *     or true if there aren't any
      */
-    this.callRPC = function(requests, envelope) {
+    this.callRPC = function (requests, envelope) {
         // If the requests include a map objects request, make sure the minimum delay
         // since the last call has passed
         if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
@@ -934,7 +947,7 @@ function Client() {
      * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
      *     or true if there aren't any
      */
-    this.tryCallRPC = function(requests, envelope) {
+    this.tryCallRPC = function (requests, envelope) {
         return self.buildSignedEnvelope(requests, envelope)
             .then(signedEnvelope => new Promise((resolve, reject) => {
                 self.request({
@@ -990,6 +1003,18 @@ function Client() {
                                 responseEnvelope.status_code));
                             return;
                         }
+                        else {
+                            authProvider.authenticate()
+                                .then(function (data) {
+                                    this.setAuthInfo(data.authType, data.token);
+                                    reject(Error('Status code ' + response.statusCode + ' received from HTTPS request'));
+                                    return;
+                                },
+                                function (error) {
+                                    console.log(error);
+                                });
+                        }
+
 
                         if (!responseEnvelope.api_url) {
                             reject(Error('Fetching RPC endpoint failed, none supplied in response'));
@@ -1068,7 +1093,7 @@ function Client() {
      * @param {Object[]} responses - Respones from API call
      * @return {Object[]} respones - Unomdified responses (to send back to Promise)
      */
-    this.processInitialData = function(responses) {
+    this.processInitialData = function (responses) {
         // Extract the minimum delay of getMapObjects()
         if (responses.length >= 5) {
             var settingsResponse = responses[4];
