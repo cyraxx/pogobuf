@@ -3,6 +3,7 @@
 ![npm downloads](https://img.shields.io/npm/dt/pogobuf.svg)
 ![dependencies](https://david-dm.org/cyraxx/pogobuf.svg)
 ![license](https://img.shields.io/npm/l/pogobuf.svg)
+[![slack](https://pogobufslack.herokuapp.com/badge.svg)](https://pogobufslack.herokuapp.com/)
 
 ## Features
 * Implements all known Pokémon Go API calls
