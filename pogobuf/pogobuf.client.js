@@ -922,7 +922,14 @@ function Client() {
                     }
 
                     if (response.statusCode !== 200) {
-                        reject(Error('Status code ' + response.statusCode + ' received from HTTPS request'));
+                        if (response.statusCode >= 400 && response.statusCode < 500) {
+                            /* These are permanent errors so throw StopError */
+                            reject(new retry.StopError(
+                                `Status code ${response.statusCode} received from HTTPS request`));
+                        } else {
+                            /* Anything else might be recoverable so throw regular Error */
+                            reject(Error(`Status code ${response.statusCode} received from HTTPS request`));
+                        }
                         return;
                     }
 
