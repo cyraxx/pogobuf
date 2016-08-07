@@ -4,6 +4,7 @@ const crypto = require('crypto'),
     EventEmitter = require('events').EventEmitter,
     Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
+    pogoSignature = require('node-pogo-signature'),
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
@@ -38,7 +39,6 @@ function Client() {
     this.setAuthInfo = function(authType, authToken) {
         self.authType = authType;
         self.authToken = authToken;
-        self.authTicket = null;
     };
 
     /**
@@ -61,6 +61,8 @@ function Client() {
      * @return {Promise} promise
      */
     this.init = function() {
+        self.signatureBuilder = new pogoSignature.Builder();
+
         /*
             The response to the first RPC call does not contain any response messages even though
             the envelope includes requests, technically it wouldn't be necessary to send the
@@ -835,6 +837,51 @@ function Client() {
     };
 
     /**
+     * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
+     * or adds the signature to an existing envelope.
+     * @private
+     * @param {Object[]} requests - Array of requests to build
+     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to sign
+     * @return {Promise} - A Promise that will be resolved with a RequestEnvelope instance
+     */
+    this.buildSignedEnvelope = function(requests, envelope) {
+        return new Promise((resolve, reject) => {
+            if (!envelope) {
+                try {
+                    envelope = self.buildEnvelope(requests);
+                } catch (e) {
+                    reject(new retry.StopError(e));
+                }
+            }
+
+            if (!envelope.auth_ticket) {
+                // Can't sign before we have received an auth ticket
+                resolve(envelope);
+                return;
+            }
+
+            self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
+            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.altitude);
+
+            self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
+                if (err) {
+                    reject(new retry.StopError(err));
+                    return;
+                }
+
+                envelope.unknown6.push(new POGOProtos.Networking.Envelopes.Unknown6({
+                    request_type: 6,
+                    unknown2: new POGOProtos.Networking.Envelopes.Unknown6.Unknown2({
+                        encrypted_signature: sigEncrypted
+                    })
+                }));
+
+                resolve(envelope);
+            });
+        });
+    };
+
+    /**
      * Executes an RPC call with the given list of requests, retrying if necessary.
      * @private
      * @param {Object[]} requests - Array of requests to send
@@ -861,131 +908,124 @@ function Client() {
      *     or true if there aren't any
      */
     this.tryCallRPC = function(requests, envelope) {
-        return new Promise((resolve, reject) => {
-            if (!envelope) {
-                try {
-                    envelope = self.buildEnvelope(requests);
-                } catch (e) {
-                    reject(e);
-                    return;
-                }
-            }
-
-            self.request({
-                method: 'POST',
-                url: self.endpoint,
-                proxy: self.proxy,
-                body: envelope.toBuffer()
-            }, (err, response, body) => {
-                if (err) {
-                    reject(Error(err));
-                    return;
-                }
-
-                if (response.statusCode !== 200) {
-                    reject(Error('Status code ' + response.statusCode + ' received from HTTPS request'));
-                    return;
-                }
-
-                var responseEnvelope;
-                try {
-                    responseEnvelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
-                } catch (e) {
-                    self.emit('parse-envelope-error', body, e);
-                    if (e.decoded) {
-                        responseEnvelope = e.decoded;
-                    } else {
-                        reject(new retry.StopError(e));
-                        return;
-                    }
-                }
-
-                self.emit('raw-response', responseEnvelope);
-
-                if (responseEnvelope.error) {
-                    reject(new retry.StopError(responseEnvelope.error));
-                    return;
-                }
-
-                if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
-
-                if (self.endpoint === INITIAL_ENDPOINT) {
-                    /* status_code 102 seems to be invalid auth token,
-                       could use later when caching token. */
-                    if (responseEnvelope.status_code !== 53) {
-                        reject(Error('Fetching RPC endpoint failed, received status code ' +
-                            responseEnvelope.status_code));
+        return self.buildSignedEnvelope(requests, envelope)
+            .then(signedEnvelope => new Promise((resolve, reject) => {
+                self.request({
+                    method: 'POST',
+                    url: self.endpoint,
+                    proxy: self.proxy,
+                    body: signedEnvelope.toBuffer()
+                }, (err, response, body) => {
+                    if (err) {
+                        reject(Error(err));
                         return;
                     }
 
-                    if (!responseEnvelope.api_url) {
-                        reject(Error('Fetching RPC endpoint failed, none supplied in response'));
+                    if (response.statusCode !== 200) {
+                        reject(Error('Status code ' + response.statusCode + ' received from HTTPS request'));
                         return;
                     }
 
-                    self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
-
-                    self.emit('endpoint-response', {
-                        status_code: responseEnvelope.status_code,
-                        request_id: responseEnvelope.request_id.toString(),
-                        api_url: responseEnvelope.api_url
-                    });
-
-                    resolve(self.callRPC(requests, envelope));
-                    return;
-                }
-
-                /* These codes indicate invalid input, no use in retrying so throw StopError */
-                if (responseEnvelope.status_code === 3 || responseEnvelope.status_code === 102) {
-                    reject(new retry.StopError(
-                        `Status code ${responseEnvelope.status_code} received from RPC`));
-                }
-
-                /* These can be temporary so throw regular Error */
-                if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
-                    reject(Error(`Status code ${responseEnvelope.status_code} received from RPC`));
-                    return;
-                }
-
-                var responses = [];
-
-                if (requests) {
-                    if (requests.length !== responseEnvelope.returns.length) {
-                        reject(Error('Request count does not match response count'));
-                        return;
-                    }
-
-                    for (var i = 0; i < responseEnvelope.returns.length; i++) {
-                        if (!requests[i].responseType) continue;
-
-                        var responseMessage;
-                        try {
-                            responseMessage = requests[i].responseType.decode(responseEnvelope.returns[i]);
-                        } catch (e) {
-                            self.emit('parse-response-error', responseEnvelope.returns[i].toBuffer(), e);
+                    var responseEnvelope;
+                    try {
+                        responseEnvelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
+                    } catch (e) {
+                        self.emit('parse-envelope-error', body, e);
+                        if (e.decoded) {
+                            responseEnvelope = e.decoded;
+                        } else {
                             reject(new retry.StopError(e));
                             return;
                         }
-
-                        responses.push(responseMessage);
                     }
-                }
 
-                self.emit('response', {
-                    status_code: responseEnvelope.status_code,
-                    request_id: responseEnvelope.request_id.toString(),
-                    responses: responses.map((r, h) => ({
-                        name: Utils.getEnumKeyByValue(RequestType, requests[h].type),
-                        type: requests[h].type,
-                        data: r
-                    }))
+                    self.emit('raw-response', responseEnvelope);
+
+                    if (responseEnvelope.error) {
+                        reject(new retry.StopError(responseEnvelope.error));
+                        return;
+                    }
+
+                    if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
+
+                    if (self.endpoint === INITIAL_ENDPOINT) {
+                        /* status_code 102 seems to be invalid auth token,
+                           could use later when caching token. */
+                        if (responseEnvelope.status_code !== 53) {
+                            reject(Error('Fetching RPC endpoint failed, received status code ' +
+                                responseEnvelope.status_code));
+                            return;
+                        }
+
+                        if (!responseEnvelope.api_url) {
+                            reject(Error('Fetching RPC endpoint failed, none supplied in response'));
+                            return;
+                        }
+
+                        self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
+
+                        self.emit('endpoint-response', {
+                            status_code: responseEnvelope.status_code,
+                            request_id: responseEnvelope.request_id.toString(),
+                            api_url: responseEnvelope.api_url
+                        });
+
+                        resolve(self.callRPC(requests, envelope));
+                        return;
+                    }
+
+                    /* These codes indicate invalid input, no use in retrying so throw StopError */
+                    if (responseEnvelope.status_code === 3 || responseEnvelope.status_code === 102) {
+                        reject(new retry.StopError(
+                            `Status code ${responseEnvelope.status_code} received from RPC`));
+                    }
+
+                    /* These can be temporary so throw regular Error */
+                    if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
+                        reject(Error(`Status code ${responseEnvelope.status_code} received from RPC`));
+                        return;
+                    }
+
+                    var responses = [];
+
+                    if (requests) {
+                        if (requests.length !== responseEnvelope.returns.length) {
+                            reject(Error('Request count does not match response count'));
+                            return;
+                        }
+
+                        for (var i = 0; i < responseEnvelope.returns.length; i++) {
+                            if (!requests[i].responseType) continue;
+
+                            var responseMessage;
+                            try {
+                                responseMessage = requests[i].responseType.decode(responseEnvelope.returns[
+                                    i]);
+                            } catch (e) {
+                                self.emit('parse-response-error', responseEnvelope.returns[i].toBuffer(), e);
+                                reject(new retry.StopError(e));
+                                return;
+                            }
+
+                            responses.push(responseMessage);
+                        }
+                    }
+
+                    self.emit('response', {
+                        status_code: responseEnvelope.status_code,
+                        request_id: responseEnvelope.request_id.toString(),
+                        responses: responses.map((r, h) => ({
+                            name: Utils.getEnumKeyByValue(RequestType, requests[h].type),
+                            type: requests[h].type,
+                            data: r
+                        }))
+                    });
+
+                    if (!responses.length) resolve(true);
+                    else if (responses.length === 1) resolve(responses[0]);
+                    else resolve(responses);
                 });
-
-                if (!responses.length) resolve(true);
-                else if (responses.length === 1) resolve(responses[0]);
-                else resolve(responses);
-            });
-        });
+            }));
     };
 }
 
