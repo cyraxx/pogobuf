@@ -1003,7 +1003,7 @@ function Client(authType, username, password) {
                                 responseEnvelope.status_code));
                             return;
                         }
-                        else {
+                        if (responseEnvelope.status_code == 102)  {
                             authProvider.authenticate()
                                 .then(function (data) {
                                     this.setAuthInfo(data.authType, data.token);
