@@ -8,7 +8,7 @@ const crypto = require('crypto'),
     request = require('request'),
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js'),
-    pogoSignature = require('C:/Users/Spencer/Documents/gitHub/node-pogo-u6/index.js');
+    pogoSignature = require('node-pogo-signature');
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
