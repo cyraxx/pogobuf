@@ -31,10 +31,10 @@ google.login(username, password).then(token => {
             return mapObjects.map_cells;
         }).each(cell => {
             console.log('Cell ' + cell.s2_cell_id.toString());
-            console.log('Has ' + cell.catchable_pokemons.length + ' catchable Pokemon');
-            return bluebird.resolve(cell.catchable_pokemons).each(catchablePokemon => {
+            console.log('Has ' + cell.nearby_pokemons.length + ' catchable Pokemon');
+            return bluebird.resolve(cell.nearby_pokemons).each(nearbyPokemon => {
                 console.log(' - A ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.PokemonId,
-                    catchablePokemon.pokemon_id) + ' is asking you to catch it.');
+                    nearbyPokemon.pokemon_id) + ' is asking you to catch it.');
             });
         });
     }, 30 * 1000);
