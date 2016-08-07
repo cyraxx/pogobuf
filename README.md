@@ -7,6 +7,7 @@
 
 ## Features
 * Implements all known Pokémon Go API calls
+* Includes request signing (aka Unknown6) support
 * Uses ES6 Promises and [Bluebird](https://github.com/petkaantonov/bluebird/)
 * Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) and Google login clients
 * Optional batch mode to group several requests in one RPC call
