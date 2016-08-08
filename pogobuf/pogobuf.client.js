@@ -78,8 +78,6 @@ function Client(authType, username, password) {
         return authProvider.authenticate()
             .then(function (data) {
                 self.setAuthInfo(data.authType, data.token);
-                console.log('authenticated!');
-                console.log(data.token);
                 return self.batchStart()
                     .getPlayer('0.31.1')
                     .getHatchedEggs()
@@ -90,7 +88,7 @@ function Client(authType, username, password) {
                     .then(self.processInitialData);
             },
             function (error) {
-                console.log(error);
+            
             });
 
 
@@ -1011,7 +1009,7 @@ function Client(authType, username, password) {
                                     return;
                                 },
                                 function (error) {
-                                    console.log(error);
+                                    
                                 });
                         }
 

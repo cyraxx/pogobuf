@@ -7,5 +7,5 @@ var client = new pogobuf.Client('loginType','username','password');
 
 client.init()
     .then(function(data){
-        console.log('init success!');
+
     });

@@ -36,7 +36,6 @@ function AuthProvider(type,user,pass) {
                 resolve({authType: authType, token: token});
             },
             function(error){
-                console.log(error);
                 reject(Error(error));
             });
         });
