@@ -9,15 +9,11 @@ const
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
-    Utils = require('./pogobuf.utils.js');
+    Utils = require('./pogobuf.utils.js'),
+    methods = require('./pogobuf.methods.js');
 
-const
-    RequestType = POGOProtos.Networking.Requests.RequestType,
-    RequestMessages = POGOProtos.Networking.Requests.Messages,
-    Responses = POGOProtos.Networking.Responses;
-
+const RequestType = POGOProtos.Networking.Requests.RequestType;
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
-
 const DEFAULTOPTIONS = {
     proxy: null,
     mapObjectsThrottling: true,
@@ -70,8 +66,10 @@ class Client extends EventEmitter {
 
     /**
      * Performs the initial API call.
+     * @param {object} options - Set options for the client
      * @param {string} object.proxy - Sets a proxy address to use for the HTTPS RPC requests.
-     * @param {bool} object.mapObjectsThrottling - Enables or disables the built-in throttling of getMapObjects() calls
+     * @param {bool} object.mapObjectsThrottling - Enables or disables the
+     * built-in throttling of getMapObjects() calls
      * @param {number} object.mapObjectsMinDelay - Minimum delay between getMapObjects() calls
      * @param {number} object.maxTries - Maximum number of times to retry a RPC call when it fails
      * @return {Promise} promise
@@ -98,6 +96,7 @@ class Client extends EventEmitter {
             requests but the app does the same. The call will then automatically be resent to the
             new API endpoint by callRPC().
         */
+
         return this.batchStart()
             .getPlayer('0.31.1')
             .getHatchedEggs()
@@ -105,7 +104,7 @@ class Client extends EventEmitter {
             .checkAwardedBadges()
             .downloadSettings()
             .batchCall()
-            .then(this.processInitialData);
+            .then(this.processInitialData.bind(this));
     }
 
     /**
@@ -148,701 +147,17 @@ class Client extends EventEmitter {
      * @param {mixed} val - The new value of the option
      */
     setOption(key, val) {
-        if (this.options.hasOwnPropery(key)) {
+        if (this.options.hasOwnProperty(key)) {
             this.options[key] = val;
         }
     }
 
-    /*
-     * API CALLS (in order of RequestType enum)
-     */
-
-     /**
-      * playerUpdate: Update current player position to server
-      * @returns {promise} promise
-      */
-    playerUpdate() {
-        return this.callOrChain({
-            type: RequestType.PLAYER_UPDATE,
-            message: new RequestMessages.PlayerUpdateMessage({
-                latitude: this.playerLatitude,
-                longitude: this.playerLongitude
-            }),
-            responseType: Responses.PlayerUpdateResponse
-        });
+    makeRequest(req, ...args) {
+        if (methods.hasOwnProperty(req)) {
+            return methods[req].call(this, ...args);
+        }
+        throw Error(`Method ${req} does not exist`);
     }
-
-    /**
-     * getPlayer: get player data
-     * @param {string} appVersion - current app version eg. "0.31.1"
-     */
-    getPlayer(appVersion) {
-        return this.callOrChain({
-            type: RequestType.GET_PLAYER,
-            message: new RequestMessages.GetPlayerMessage({
-                app_version: appVersion
-            }),
-            responseType: Responses.GetPlayerResponse
-        });
-    }
-
-    /**
-     * getInventory: get the players inventory: bag, pokemon, eggs, pokedex,
-     * upgrades, used items, currency and candies.
-     * Util method `pogobuf.Utils.splitInventory` can be used on the result
-     * @param {number} lastTimestamp - unknown, the app seems to always give 0
-     */
-    getInventory(lastTimestamp) {
-        return this.callOrChain({
-            type: RequestType.GET_INVENTORY,
-            message: new RequestMessages.GetInventoryMessage({
-                last_timestamp_ms: lastTimestamp
-            }),
-            responseType: Responses.GetInventoryResponse
-        });
-    }
-
-    /**
-     * downloadSettings: download the current app settings
-     * @param {string} hash
-     */
-    downloadSettings(hash) {
-        return this.callOrChain({
-            type: RequestType.DOWNLOAD_SETTINGS,
-            message: new RequestMessages.DownloadSettingsMessage({
-                hash: hash
-            }),
-            responseType: Responses.DownloadSettingsResponse
-        });
-    }
-
-    /**
-     * downloadItemTemplates
-     */
-    downloadItemTemplates() {
-        return this.callOrChain({
-            type: RequestType.DOWNLOAD_ITEM_TEMPLATES,
-            responseType: Responses.DownloadItemTemplatesResponse
-        });
-    }
-
-    /**
-     * downloadRemoteConfigVersion
-     * @param {string} platform
-     * @param {string} deviceManufacturer
-     * @param {string} deviceModel
-     * @param {string} locale
-     * @param {string} appVersion
-     */
-    downloadRemoteConfigVersion(platform, deviceManufacturer, deviceModel, locale, appVersion) {
-        return this.callOrChain({
-            type: RequestType.DOWNLOAD_REMOTE_CONFIG_VERSION,
-            message: new RequestMessages.DownloadRemoteConfigVersionMessage({
-                platform: platform,
-                device_manufacturer: deviceManufacturer,
-                device_model: deviceModel,
-                locale: locale,
-                app_version: appVersion
-            }),
-            responseType: Responses.DownloadRemoteConfigVersionResponse
-        });
-    }
-
-    /**
-     * fortSearch: Spin a fort for rewards, does not work on gyms
-     * @param {string} fortID
-     * @param {string} fortLatitude
-     * @param {string} fortLongitude
-     */
-    fortSearch(fortID, fortLatitude, fortLongitude) {
-        return this.callOrChain({
-            type: RequestType.FORT_SEARCH,
-            message: new RequestMessages.FortSearchMessage({
-                fort_id: fortID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude,
-                fort_latitude: fortLatitude,
-                fort_longitude: fortLongitude
-            }),
-            responseType: Responses.FortSearchResponse
-        });
-    }
-
-    /**
-     * encounter: Start a enncounter with specified nearby pokemon
-     * @param {string} encounterID
-     * @param {string} spawnPointID
-     */
-    encounter(encounterID, spawnPointID) {
-        return this.callOrChain({
-            type: RequestType.ENCOUNTER,
-            message: new RequestMessages.EncounterMessage({
-                encounter_id: encounterID,
-                spawn_point_id: spawnPointID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            }),
-            responseType: Responses.EncounterResponse
-        });
-    }
-
-    /**
-     * catchPokemon: throw a pokeball during a encounter
-     * @param encounterID - encounter_id from the encounter
-     * @param {number} pokeballItemID - Which pokeball 1 = normal, 2 = great, 3 = ultra
-     * @param {string} normalizedReticleSize - Current size of the circle. eg. 1.950 for very small
-     * @param spawnPointID - spawn_point_id from the encounter
-     * @param {bool} hitPokemon - Did the pokeball hit the pokemon
-     * @param {string} spinModifier - Curve ratio, eg. curve bonus: 0.850
-     * @param {string} normalizedHitPosition - Where the pokeball hit the pokemon. 1.0 is center
-     */
-    catchPokemon(encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon,
-        spinModifier, normalizedHitPosition) {
-        return this.callOrChain({
-            type: RequestType.CATCH_POKEMON,
-            message: new RequestMessages.CatchPokemonMessage({
-                encounter_id: encounterID,
-                pokeball: pokeballItemID,
-                normalized_reticle_size: normalizedReticleSize,
-                spawn_point_id: spawnPointID,
-                hit_pokemon: hitPokemon,
-                spin_modifier: spinModifier,
-                normalized_hit_position: normalizedHitPosition
-            }),
-            responseType: Responses.CatchPokemonResponse
-        });
-    }
-
-    /**
-     * fortDetails: look up fort details
-     * @param fortID
-     * @param fortLatitude
-     * @param fortLongitude
-     */
-    fortDetails(fortID, fortLatitude, fortLongitude) {
-        return this.callOrChain({
-            type: RequestType.FORT_DETAILS,
-            message: new RequestMessages.FortDetailsMessage({
-                fort_id: fortID,
-                latitude: fortLatitude,
-                longitude: fortLongitude
-            }),
-            responseType: Responses.FortDetailsResponse
-        });
-    }
-
-    /**
-     * getMapObjects: Load map data like forts and pokemon
-     * @param {array} cellIDs - S2 geo cell IDs of which you want map data
-     * @param {array} sinceTimestamps - Array of timestamps with same length of cellIDs
-     */
-    getMapObjects(cellIDs, sinceTimestamps) {
-        return this.callOrChain({
-            type: RequestType.GET_MAP_OBJECTS,
-            message: new RequestMessages.GetMapObjectsMessage({
-                cell_id: cellIDs,
-                since_timestamp_ms: sinceTimestamps,
-                latitude: this.playerLatitude,
-                longitude: this.playerLongitude
-            }),
-            responseType: Responses.GetMapObjectsResponse
-        });
-    }
-
-    /**
-     * fortDeployPokemon
-     * @param fortID
-     * @param pokemonID
-     */
-    fortDeployPokemon(fortID, pokemonID) {
-        return this.callOrChain({
-            type: RequestType.FORT_DEPLOY_POKEMON,
-            message: new RequestMessages.FortDeployPokemonMessage({
-                fort_id: fortID,
-                pokemon_id: pokemonID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            }),
-            responseType: Responses.FortDeployPokemonResponse
-        });
-    }
-
-    /**
-     * fortRecallPokemon
-     * @param fortID
-     * @param pokemonID
-     */
-    fortRecallPokemon(fortID, pokemonID) {
-        return this.callOrChain({
-            type: RequestType.FORT_RECALL_POKEMON,
-            message: new RequestMessages.FortRecallPokemonMessage({
-                fort_id: fortID,
-                pokemon_id: pokemonID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            }),
-            responseType: Responses.FortRecallPokemonResponse
-        });
-    }
-
-    /**
-     * releasePokemon: known as "transfer", receive 1 candy for releasing
-     * @param pokemonID
-     */
-    releasePokemon(pokemonID) {
-        return this.callOrChain({
-            type: RequestType.RELEASE_POKEMON,
-            message: new RequestMessages.ReleasePokemonMessage({
-                pokemon_id: pokemonID
-            }),
-            responseType: Responses.ReleasePokemonResponse
-        });
-    }
-
-    /**
-     * useItemPotion
-     * @param itemID
-     * @param pokemonID
-     */
-    useItemPotion(itemID, pokemonID) {
-        return this.callOrChain({
-            type: RequestType.USE_ITEM_POTION,
-            message: new RequestMessages.UseItemPotionMessage({
-                item_id: itemID,
-                pokemon_id: pokemonID
-            }),
-            responseType: Responses.UseItemPotionResponse
-        });
-    }
-
-    /**
-     * useItemCapture
-     * @param itemID
-     * @param encounterID
-     * @param spawnPointID
-     */
-    useItemCapture(itemID, encounterID, spawnPointID) {
-        return this.callOrChain({
-            type: RequestType.USE_ITEM_CAPTURE,
-            message: new RequestMessages.UseItemCaptureMessage({
-                item_id: itemID,
-                encounter_id: encounterID,
-                spawn_point_id: spawnPointID
-            }),
-            responseType: Responses.UseItemCaptureResponse
-        });
-    }
-
-    /**
-     * useItemRevive
-     * @param {number} itemID
-     * @param {number} pokemonID
-     */
-    useItemRevive(itemID, pokemonID) {
-        return this.callOrChain({
-            type: RequestType.USE_ITEM_REVIVE,
-            message: new RequestMessages.UseItemReviveMessage({
-                item_id: itemID,
-                pokemon_id: pokemonID
-            }),
-            responseType: Responses.UseItemReviveResponse
-        });
-    }
-
-    /**
-     * getPlayerProfile
-     * @param {string} playerName
-     */
-    getPlayerProfile(playerName) {
-        return this.callOrChain({
-            type: RequestType.GET_PLAYER_PROFILE,
-            message: new RequestMessages.GetPlayerProfileMessage({
-                player_name: playerName
-            }),
-            responseType: Responses.GetPlayerProfileResponse
-        });
-    }
-
-    /**
-     * getPlayerProfile
-     * @param {number} pokemonID
-     */
-    evolvePokemon(pokemonID) {
-        return this.callOrChain({
-            type: RequestType.EVOLVE_POKEMON,
-            message: new RequestMessages.EvolvePokemonMessage({
-                pokemon_id: pokemonID
-            }),
-            responseType: Responses.EvolvePokemonResponse
-        });
-    }
-
-    /**
-     * getHatchedEggs
-     */
-    getHatchedEggs() {
-        return this.callOrChain({
-            type: RequestType.GET_HATCHED_EGGS,
-            responseType: Responses.GetHatchedEggsResponse
-        });
-    }
-
-    /**
-     * encounterTutorialComplete
-     * @param {number} pokemonID
-     */
-    encounterTutorialComplete(pokemonID) {
-        return this.callOrChain({
-            type: RequestType.ENCOUNTER_TUTORIAL_COMPLETE,
-            message: new RequestMessages.EncounterTutorialCompleteMessage({
-                pokemon_id: pokemonID
-            }),
-            responseType: Responses.EncounterTutorialCompleteResponse
-        });
-    }
-
-    /**
-     * levelUpRewards
-     * @param {number} level
-     */
-    levelUpRewards(level) {
-        return this.callOrChain({
-            type: RequestType.LEVEL_UP_REWARDS,
-            message: new RequestMessages.LevelUpRewardsMessage({
-                level: level
-            }),
-            responseType: Responses.LevelUpRewardsResponse
-        });
-    }
-
-    checkAwardedBadges() {
-        return this.callOrChain({
-            type: RequestType.CHECK_AWARDED_BADGES,
-            responseType: Responses.CheckAwardedBadgesResponse
-        });
-    }
-
-    useItemGym(itemID, gymID) {
-        return this.callOrChain({
-            type: RequestType.USE_ITEM_GYM,
-            message: new RequestMessages.UseItemGymMessage({
-                item_id: itemID,
-                gym_id: gymID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            }),
-            responseType: Responses.UseItemGymResponse
-        });
-    }
-
-    getGymDetails(gymID, gymLatitude, gymLongitude) {
-        return this.callOrChain({
-            type: RequestType.GET_GYM_DETAILS,
-            message: new RequestMessages.GetGymDetailsMessage({
-                gym_id: gymID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude,
-                gym_latitude: gymLatitude,
-                gym_longitude: gymLongitude
-            }),
-            responseType: Responses.GetGymDetailsResponse
-        });
-    }
-
-    startGymBattle(gymID, attackingPokemonIDs, defendingPokemonID) {
-        return this.callOrChain({
-            type: RequestType.START_GYM_BATTLE,
-            message: new RequestMessages.StartGymBattleMessage({
-                gym_id: gymID,
-                attacking_pokemon_ids: attackingPokemonIDs,
-                defending_pokemon_id: defendingPokemonID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            }),
-            responseType: Responses.StartGymBattleResponse
-        });
-    }
-
-    attackGym(gymID, battleID, attackActions, lastRetrievedAction) {
-        return this.callOrChain({
-            type: RequestType.ATTACK_GYM,
-            message: new RequestMessages.AttackGymMessage({
-                gym_id: gymID,
-                battle_id: battleID,
-                attack_actions: attackActions,
-                last_retrieved_actions: lastRetrievedAction,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            }),
-            responseType: Responses.AttackGymResponse
-        });
-    }
-
-    recycleInventoryItem(itemID, count) {
-        return this.callOrChain({
-            type: RequestType.RECYCLE_INVENTORY_ITEM,
-            message: new RequestMessages.RecycleInventoryItemMessage({
-                item_id: itemID,
-                count: count
-            }),
-            responseType: Responses.RecycleInventoryItemResponse
-        });
-    }
-
-    collectDailyBonus() {
-        return this.callOrChain({
-            type: RequestType.COLLECT_DAILY_BONUS,
-            responseType: Responses.CollectDailyBonusResponse
-        });
-    }
-
-    useItemXPBoost(itemID) {
-        return this.callOrChain({
-            type: RequestType.USE_ITEM_XP_BOOST,
-            message: new RequestMessages.UseItemXpBoostMessage({
-                item_id: itemID
-            }),
-            responseType: Responses.UseItemXpBoostResponse
-        });
-    }
-
-    useItemEggIncubator(itemID, pokemonID) {
-        return this.callOrChain({
-            type: RequestType.USE_ITEM_EGG_INCUBATOR,
-            message: new RequestMessages.UseItemEggIncubatorMessage({
-                item_id: itemID,
-                pokemon_id: pokemonID
-            }),
-            responseType: Responses.UseItemEggIncubatorResponse
-        });
-    }
-
-    useIncense(itemID) {
-        return this.callOrChain({
-            type: RequestType.USE_INCENSE,
-            message: new RequestMessages.UseIncenseMessage({
-                incense_type: itemID
-            }),
-            responseType: Responses.UseIncenseResponse
-        });
-    }
-
-    getIncensePokemon() {
-        return this.callOrChain({
-            type: RequestType.GET_INCENSE_POKEMON,
-            message: new RequestMessages.GetIncensePokemonMessage({
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            }),
-            responseType: Responses.GetIncensePokmeonResponse
-        });
-    }
-
-    incenseEncounter(encounterID, encounterLocation) {
-        return this.callOrChain({
-            type: RequestType.INCENSE_ENCOUNTER,
-            message: new RequestMessages.IncenseEncounterMessage({
-                encounter_id: encounterID,
-                encounter_location: encounterLocation
-            }),
-            responseType: Responses.IncenseEncounterResponse
-        });
-    }
-
-    addFortModifier(modifierItemID, fortID) {
-        return this.callOrChain({
-            type: RequestType.ADD_FORT_MODIFIER,
-            message: new RequestMessages.AddFortModifierMessage({
-                modifier_type: modifierItemID,
-                fort_id: fortID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            })
-        });
-    }
-
-    diskEncounter(encounterID, fortID) {
-        return this.callOrChain({
-            type: RequestType.DISK_ENCOUNTER,
-            message: new RequestMessages.DiskEncounterMessage({
-                encounter_id: encounterID,
-                fort_id: fortID,
-                player_latitude: this.playerLatitude,
-                player_longitude: this.playerLongitude
-            }),
-            responseType: Responses.DiskEncounterResponse
-        });
-    }
-
-    collectDailyDefenderBonus() {
-        return this.callOrChain({
-            type: RequestType.COLLECT_DAILY_DEFENDER_BONUS,
-            responseType: Responses.CollectDailyDefenderBonusResponse
-        });
-    }
-
-    upgradePokemon(pokemonID) {
-        return this.callOrChain({
-            type: RequestType.UPGRADE_POKEMON,
-            message: new RequestMessages.UpgradePokemonMessage({
-                pokemon_id: pokemonID
-            }),
-            responseType: Responses.UpgradePokemonResponse
-        });
-    }
-
-    setFavoritePokemon(pokemonID, isFavorite) {
-        return this.callOrChain({
-            type: RequestType.SET_FAVORITE_POKEMON,
-            message: new RequestMessages.SetFavoritePokemonMessage({
-                pokemon_id: pokemonID,
-                is_favorite: isFavorite
-            }),
-            responseType: Responses.SetFavoritePokemonResponse
-        });
-    }
-
-    nicknamePokemon(pokemonID, nickname) {
-        return this.callOrChain({
-            type: RequestType.NICKNAME_POKEMON,
-            message: new RequestMessages.NicknamePokemonMessage({
-                pokemon_id: pokemonID,
-                nickname: nickname
-            }),
-            responseType: Responses.NicknamePokemonResponse
-        });
-    }
-
-    equipBadge(badgeType) {
-        return this.callOrChain({
-            type: RequestType.EQUIP_BADGE,
-            message: new RequestMessages.EquipBadgeMessage({
-                badge_type: badgeType
-            }),
-            responseType: Responses.EquipBadgeResponse
-        });
-    }
-
-    setContactSettings(sendMarketingEmails, sendPushNotifications) {
-        return this.callOrChain({
-            type: RequestType.SET_CONTACT_SETTINGS,
-            message: new RequestMessages.SetContactSettingsMessage({
-                contact_settings: {
-                    send_marketing_emails: sendMarketingEmails,
-                    send_push_notifications: sendPushNotifications
-                }
-            }),
-            responseType: Responses.SetContactSettingsResponse
-        });
-    }
-
-    getAssetDigest(platform, deviceManufacturer, deviceModel, locale, appVersion) {
-        return this.callOrChain({
-            type: RequestType.GET_ASSET_DIGEST,
-            message: new RequestMessages.GetAssetDigestMessage({
-                platform: platform,
-                device_manufacturer: deviceManufacturer,
-                device_model: deviceModel,
-                locale: locale,
-                app_version: appVersion
-            }),
-            responseType: Responses.GetAssetDigestResponse
-        });
-    }
-
-    getDownloadURLs(assetIDs) {
-        return this.callOrChain({
-            type: RequestType.GET_DOWNLOAD_URLS,
-            message: new RequestMessages.GetDownloadUrlsMessage({
-                asset_id: assetIDs
-            }),
-            responseType: Responses.GetDownloadUrlsResponse
-        });
-    }
-
-    getSuggestedCodenames() {
-        return this.callOrChain({
-            type: RequestType.GET_SUGGESTED_CODENAMES,
-            responseType: Responses.GetSuggestedCodenamesResponse
-        });
-    }
-
-    checkCodenameAvailable(codename) {
-        return this.callOrChain({
-            type: RequestType.CHECK_CODENAME_AVAILABLE,
-            message: new RequestMessages.CheckCodenameAvailableMessage({
-                codename: codename
-            }),
-            responseType: Responses.CheckCodenameAvailableResponse
-        });
-    }
-
-    claimCodename(codename) {
-        return this.callOrChain({
-            type: RequestType.CLAIM_CODENAME,
-            message: new RequestMessages.ClaimCodenameMessage({
-                codename: codename
-            }),
-            responseType: Responses.ClaimCodenameResponse
-        });
-    }
-
-    setAvatar(skin, hair, shirt, pants, hat, shoes, gender, eyes, backpack) {
-        return this.callOrChain({
-            type: RequestType.SET_AVATAR,
-            message: new RequestMessages.SetAvatarMessage({
-                player_avatar: {
-                    skin: skin,
-                    hair: hair,
-                    shirt: shirt,
-                    pants: pants,
-                    hat: hat,
-                    shoes: shoes,
-                    gender: gender,
-                    eyes: eyes,
-                    backpack: backpack
-                }
-            }),
-            responseType: Responses.SetAvatarResponse
-        });
-    }
-
-    setPlayerTeam(teamColor) {
-        return this.callOrChain({
-            type: RequestType.SET_PLAYER_TEAM,
-            message: new RequestMessages.SetPlayerTeamMessage({
-                team: teamColor
-            }),
-            responseType: Responses.SetPlayerTeamResponse
-        });
-    }
-
-    markTutorialComplete(tutorialsCompleted, sendMarketingEmails, sendPushNotifications) {
-        return this.callOrChain({
-            type: RequestType.MARK_TUTORIAL_COMPLETE,
-            message: new RequestMessages.MarkTutorialCompleteMessage({
-                tutorials_completed: tutorialsCompleted,
-                send_marketing_emails: sendMarketingEmails,
-                send_push_notifications: sendPushNotifications
-            }),
-            responseType: Responses.MarkTutorialCompleteResponse
-        });
-    }
-
-    echo() {
-        return this.callOrChain({
-            type: RequestType.ECHO,
-            responseType: Responses.EchoResponse
-        });
-    }
-
-    sfidaActionLog() {
-        return this.callOrChain({
-            type: RequestType.SFIDA_ACTION_LOG,
-            responseType: Responses.SfidaActionLogResponse
-        });
-    }
-
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -858,7 +173,7 @@ class Client extends EventEmitter {
         } else {
             return this.callRPC([requestMessage]);
         }
-    };
+    }
 
     /**
      * Generates a random request ID
@@ -991,21 +306,21 @@ class Client extends EventEmitter {
         // since the last call has passed
         if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
             var now = new Date().getTime(),
-                delayNeeded = this.lastMapObjectsCall + (this.mapObjectsMinDelay * 1000) - now;
+                delayNeeded = this.lastMapObjectsCall + (this.options.mapObjectsMinDelay * 1000) - now;
 
-            if (delayNeeded > 0 && this.mapObjectsThrottlingEnabled) {
+            if (delayNeeded > 0 && this.options.mapObjectsThrottling) {
                 return Promise.delay(delayNeeded).then(() => this.callRPC(requests, envelope));
             }
 
             this.lastMapObjectsCall = now;
         }
 
-        if (this.maxTries <= 1) return this.tryCallRPC(requests, envelope);
+        if (this.options.maxTries <= 1) return this.tryCallRPC(requests, envelope);
 
         return retry(() => this.tryCallRPC(requests, envelope), {
             interval: 300,
             backoff: 2,
-            max_tries: this.maxTries
+            max_tries: this.options.maxTries
         });
     }
 
@@ -1151,7 +466,7 @@ class Client extends EventEmitter {
      * @param {Object[]} responses - Respones from API call
      * @return {Object[]} respones - Unomdified responses (to send back to Promise)
      */
-     processInitialData(responses) {
+    processInitialData(responses) {
         // Extract the minimum delay of getMapObjects()
         if (responses.length >= 5) {
             var settingsResponse = responses[4];
@@ -1160,11 +475,25 @@ class Client extends EventEmitter {
                 settingsResponse.settings.map_settings &&
                 settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
             ) {
-                this.mapObjectsMinDelay =
-                    settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000;
+                this.setOption(
+                  'mapObjectsMinDelay',
+                  settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
+                );
             }
         }
         return responses;
+    }
+}
+
+for (let method in methods) {
+    if (methods.hasOwnProperty(method)) {
+        Client.prototype[method] = function(...args) {
+            let req = this.makeRequest(method, ...args);
+            return this.callOrChain(req);
+        };
+        Client.prototype[method + 'Raw'] = function(...args) {
+            return this.makeRequest(method, ...args);
+        };
     }
 }
 
