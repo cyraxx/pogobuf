@@ -190,7 +190,7 @@ class Client extends EventEmitter {
      * @return {Long}
      */
     getRequestID() {
-        var bytes = crypto.randomBytes(8);
+        let bytes = crypto.randomBytes(8);
         return Long.fromBits(
             bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
             bytes[4] << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7],
@@ -205,7 +205,7 @@ class Client extends EventEmitter {
      * @return {POGOProtos.Networking.Envelopes.RequestEnvelope}
      */
     buildEnvelope(requests) {
-        var envelopeData = {
+        let envelopeData = {
             status_code: 2,
             request_id: this.getRequestID(),
             unknown12: 989
@@ -240,7 +240,7 @@ class Client extends EventEmitter {
             });
 
             envelopeData.requests = requests.map(r => {
-                var requestData = {
+                let requestData = {
                     request_type: r.type
                 };
 
@@ -314,7 +314,7 @@ class Client extends EventEmitter {
         // If the requests include a map objects request, make sure the minimum delay
         // since the last call has passed
         if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
-            var now = new Date().getTime(),
+            let now = new Date().getTime(),
                 delayNeeded = this.lastMapObjectsCall + (this.options.mapObjectsMinDelay * 1000) - now;
 
             if (delayNeeded > 0 && this.options.mapObjectsThrottling) {
@@ -367,7 +367,7 @@ class Client extends EventEmitter {
                         return;
                     }
 
-                    var responseEnvelope;
+                    let responseEnvelope;
                     try {
                         responseEnvelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
                     } catch (e) {
@@ -427,7 +427,7 @@ class Client extends EventEmitter {
                         return;
                     }
 
-                    var responses = [];
+                    let responses = [];
 
                     if (requests) {
                         if (requests.length !== responseEnvelope.returns.length) {
@@ -435,10 +435,10 @@ class Client extends EventEmitter {
                             return;
                         }
 
-                        for (var i = 0; i < responseEnvelope.returns.length; i++) {
+                        for (let i = 0; i < responseEnvelope.returns.length; i++) {
                             if (!requests[i].responseType) continue;
 
-                            var responseMessage;
+                            let responseMessage;
                             try {
                                 responseMessage = requests[i].responseType.decode(responseEnvelope.returns[
                                     i]);
@@ -478,7 +478,7 @@ class Client extends EventEmitter {
     processInitialData(responses) {
         // Extract the minimum delay of getMapObjects()
         if (responses.length >= 5) {
-            var settingsResponse = responses[4];
+            let settingsResponse = responses[4];
             if (!settingsResponse.error &&
                 settingsResponse.settings &&
                 settingsResponse.settings.map_settings &&
