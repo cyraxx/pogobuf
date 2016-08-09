@@ -236,5 +236,28 @@ module.exports = {
             stam: stam,
             percent: percent
         };
+    },
+    
+    /**
+     * Utility method to convert all Long.js objects to integers or strings
+     * @param {object} object – An object
+     * @returns {object}
+     * @static
+     */
+    convertLongs: function(object) {
+        if(!object || typeof object !== 'object') return new Object();
+        
+        if(Long.isLong(object)) return (object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) ? object.toNumber() : object.toString());
+
+        for(var i in object) {
+            if(object.hasOwnProperty(i)) {
+                if(Long.isLong(object[i]))
+                    object[i] = (object[i].lessThanOrEqual(Number.MAX_SAFE_INTEGER) ? object[i].toNumber() : object[i].toString());
+                else if(typeof object[i] === 'object')
+                    object[i] = this.convertLongs(object[i]);
+            }
+        }
+
+        return object;
     }
 };
