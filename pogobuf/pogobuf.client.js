@@ -81,7 +81,7 @@ class Client extends EventEmitter {
         this.signatureBuilder = new pogoSignature.Builder();
         this.lastMapObjectsCall = 0;
         // request default
-        this.request = request.defaults({
+        this.rpcRequest = request.defaults({
             headers: {
                 'User-Agent': 'Niantic App',
                 'Accept': '*/*',
@@ -96,15 +96,40 @@ class Client extends EventEmitter {
             requests but the app does the same. The call will then automatically be resent to the
             new API endpoint by callRPC().
         */
-
-        return this.batchStart()
+        return this.batch()
             .getPlayer('0.31.1')
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()
             .downloadSettings()
-            .batchCall()
+            .send()
             .then(this.processInitialData.bind(this));
+    }
+
+    /**
+     * Create a batch call
+     * @returns {object} batch request object
+     */
+    batch() {
+        let self = this;
+        let req = {
+            requests: [],
+            send: function() {
+                return self.callRPC(this.requests);
+            }
+        };
+        for (let method in methods) {
+            if (methods.hasOwnProperty(method)) {
+                Object.defineProperty(req, method, {
+                    enumerable: true,
+                    value: function(...args) {
+                        this.requests.push(self.makeRequest(method, ...args));
+                        return this;
+                    }
+                });
+            }
+        }
+        return req;
     }
 
     /**
@@ -157,22 +182,6 @@ class Client extends EventEmitter {
             return methods[req].call(this, ...args);
         }
         throw Error(`Method ${req} does not exist`);
-    }
-
-    /**
-     * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
-     * list of batched requests and returns this (for chaining).
-     * @private
-     * @param {object} requestMessage - RPC request object
-     * @return {Promise|Client}
-     */
-    callOrChain(requestMessage) {
-        if (this.batchRequests) {
-            this.batchRequests.push(requestMessage);
-            return this;
-        } else {
-            return this.callRPC([requestMessage]);
-        }
     }
 
     /**
@@ -335,7 +344,7 @@ class Client extends EventEmitter {
     tryCallRPC(requests, envelope) {
         return this.buildSignedEnvelope(requests, envelope)
             .then(signedEnvelope => new Promise((resolve, reject) => {
-                this.request({
+                this.rpcRequest({
                     method: 'POST',
                     url: this.endpoint,
                     proxy: this.proxy,
@@ -487,13 +496,16 @@ class Client extends EventEmitter {
 
 for (let method in methods) {
     if (methods.hasOwnProperty(method)) {
-        Client.prototype[method] = function(...args) {
-            let req = this.makeRequest(method, ...args);
-            return this.callOrChain(req);
-        };
-        Client.prototype[method + 'Raw'] = function(...args) {
-            return this.makeRequest(method, ...args);
-        };
+        Object.defineProperty(Client.prototype, method, {
+            value: function(...args) {
+                return this.callRPC([this.makeRequest(method, ...args)]);
+            }
+        });
+        Object.defineProperty(Client.prototype, (method + 'Raw'), {
+            value: function(...args) {
+                return this.makeRequest(method, ...args);
+            }
+        });
     }
 }
 
