@@ -1,6 +1,7 @@
 'use strict';
 
-var s2 = require('s2-geometry').S2;
+var s2 = require('s2-geometry').S2,
+    Long = require('long');
 
 /**
  * Various utilities for dealing with Pokémon Go API requests.
