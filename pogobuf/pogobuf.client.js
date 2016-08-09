@@ -19,6 +19,13 @@ const DEFAULTOPTIONS = {
     mapObjectsThrottling: true,
     mapObjectsMinDelay: 5,
     maxTries: 5,
+    appVersion: '0.31.1'
+};
+
+const RETRYSETTINGS = {
+    delay: 300,
+    backoff: 2,
+    tries: 5
 };
 
 /**
@@ -30,9 +37,6 @@ class Client extends EventEmitter {
 
     constructor() {
         super();
-        this.authType = null;
-        this.authToken = null;
-        this.batchRequests = false;
     }
 
     /**
@@ -97,13 +101,12 @@ class Client extends EventEmitter {
             new API endpoint by callRPC().
         */
         return this.batch()
-            .getPlayer('0.31.1')
+            .getPlayer(this.options.appVersion)
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()
             .downloadSettings()
-            .send()
-            .then(this.processInitialData.bind(this));
+            .call();
     }
 
     /**
@@ -111,11 +114,14 @@ class Client extends EventEmitter {
      * @returns {object} batch request object
      */
     batch() {
-        let self = this;
         let req = {
-            requests: [],
-            send: function() {
-                return self.callRPC(this.requests);
+            _requests: [],
+            _client: this,
+            _envelope: null,
+            _containsMapCall: false,
+            _try: 0,
+            call: function() {
+                return this._client.call.call(this._client, this, this._requests);
             }
         };
         for (let method in methods) {
@@ -123,7 +129,11 @@ class Client extends EventEmitter {
                 Object.defineProperty(req, method, {
                     enumerable: true,
                     value: function(...args) {
-                        this.requests.push(self.makeRequest(method, ...args));
+                        let _request = methods[method].call(this._client, ...args);
+                        if (_request.type === RequestType.GET_MAP_OBJECTS) {
+                            this._containsMapCall = true;
+                        }
+                        this._requests.push(_request);
                         return this;
                     }
                 });
@@ -133,37 +143,174 @@ class Client extends EventEmitter {
     }
 
     /**
-     * Sets batch mode. All further API requests will be held and executed in one RPC call when
-     * {@link #batchCall} is called.
-     * @return {Client} this
+     * The batch call method, execute a request
+     * @param {object} req
+     * @param {array} requests
+     * @returns {promise} shit
      */
-    batchStart() {
-        if (!this.batchRequests) {
-            this.batchRequests = [];
+    call(req, requests) {
+        let getEnvelope;
+
+        if (req._envelope) {
+            getEnvelope = Promise.resolve(req._envelope);
+        } else {
+            let basicEnvelope = this.buildEnvelope(requests);
+            getEnvelope = this.signEnvelope(basicEnvelope).then(signedEnvelope => {
+                req._envelope = signedEnvelope;
+                return signedEnvelope;
+            });
         }
-        return this;
+
+        // If needed, delay request for getMapObjects()
+        if (req._containsMapCall && this.options.mapObjectsThrottling) {
+            let now = new Date().getTime(),
+                delayNeeded = this.lastMapObjectsCall + (this.options.mapObjectsMinDelay * 1000) - now;
+
+            if (delayNeeded > 0) {
+                return Promise.delay(delayNeeded).then(() => this.call(req));
+            }
+            this.lastMapObjectsCall = now;
+        }
+
+        return getEnvelope.then(envelope => this.callRPC(envelope, requests)).catch(reason => {
+            if (reason.abort) throw reason;
+            if (++req._try >= RETRYSETTINGS.tries) throw new Error('RPC Call passed retry limit:' + reason);
+            let delay = RETRYSETTINGS.delay * RETRYSETTINGS.backoff * req._try;
+            return Promise.delay(delay).then(() => this.call(req));
+        });
     }
 
     /**
-     * Clears the list of batched requests and aborts batch mode.
+     * Executes an RPC call with the given request envelope
+     * @private
+     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to use
+     * @param {object} requests
+     * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
+     *     or true if there aren't any
      */
-    batchClear() {
-        this.batchRequests = false;
+    callRPC(envelope, requests) {
+        console.log('REQUEST BEING DONE');
+        return this.sendRequest(envelope).then(body => {
+            let responseEnvelope;
+            try {
+                responseEnvelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
+            } catch (error) {
+                this.emit('parse-envelope-error', body, error);
+                if (error.decoded) {
+                    responseEnvelope = error.decoded;
+                } else {
+                    throw new retry.StopError(error);
+                }
+            }
+
+            this.emit('raw-response', responseEnvelope);
+
+            if (responseEnvelope.error) {
+                throw new retry.StopError(responseEnvelope.error);
+            }
+
+            if (responseEnvelope.auth_ticket) this.authTicket = responseEnvelope.auth_ticket;
+
+            if (this.endpoint === INITIAL_ENDPOINT) {
+                /* status_code 102 seems to be invalid auth token,
+                   could use later when caching token. */
+                if (responseEnvelope.status_code !== 53) {
+                    throw new Error('Fetching RPC endpoint failed, received status code ' +
+                        responseEnvelope.status_code);
+                }
+
+                if (!responseEnvelope.api_url) {
+                    throw new Error('Fetching RPC endpoint failed, none supplied in response');
+                }
+
+                this.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
+
+                this.emit('endpoint-response', {
+                    status_code: responseEnvelope.status_code,
+                    request_id: responseEnvelope.request_id.toString(),
+                    api_url: responseEnvelope.api_url
+                });
+
+                return this.callRPC(envelope, requests);
+            }
+
+            /* These codes indicate invalid input, no use in retrying so throw StopError */
+            if (responseEnvelope.status_code === 3 || responseEnvelope.status_code === 102) {
+                throw new retry.StopError(
+                    `Status code ${responseEnvelope.status_code} received from RPC`);
+            }
+
+            /* These can be temporary so throw regular Error */
+            if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
+                throw new Error(`Status code ${responseEnvelope.status_code} received from RPC`);
+            }
+
+            let responses = [];
+
+            if (requests) {
+                if (requests.length !== responseEnvelope.returns.length) {
+                    throw new Error('Request count does not match response count');
+                }
+
+                for (let i = 0; i < responseEnvelope.returns.length; i++) {
+                    if (!requests[i].responseType) continue;
+
+                    let responseMessage;
+                    try {
+                        responseMessage = requests[i].responseType.decode(responseEnvelope.returns[
+                            i]);
+                    } catch (e) {
+                        this.emit('parse-response-error', responseEnvelope.returns[i].toBuffer(), e);
+                        throw new retry.StopError(e);
+                    }
+
+                    responses.push(responseMessage);
+                }
+            }
+
+            this.emit('response', {
+                status_code: responseEnvelope.status_code,
+                request_id: responseEnvelope.request_id.toString(),
+                responses: responses.map((r, h) => ({
+                    name: Utils.getEnumKeyByValue(RequestType, requests[h].type),
+                    type: requests[h].type,
+                    data: r
+                }))
+            });
+
+            if (!responses.length) return null;
+            else if (responses.length === 1) return responses[0];
+            else return responses;
+        });
     }
 
     /**
-     * Executes any batched requests.
-     * @return {Promise}
+     * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
+     * or adds the signature to an existing envelope.
+     * @private
+     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to sign
+     * @return {Promise} - A Promise that will be resolved with a RequestEnvelope instance
      */
-    batchCall() {
-        if (!this.batchRequests || this.batchRequests.length === 0) {
-            return Promise.resolve(false);
-        }
+    signEnvelope(envelope) {
+        return new Promise((resolve, reject) => {
+            if (!envelope.auth_ticket) resolve(envelope);
 
-        let p = this.callRPC(this.batchRequests);
+            this.signatureBuilder.setAuthTicket(envelope.auth_ticket);
+            this.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.altitude);
 
-        this.batchClear();
-        return p;
+            this.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
+                if (err) return reject(new Error(err));
+
+                envelope.unknown6.push(new POGOProtos.Networking.Envelopes.Unknown6({
+                    request_type: 6,
+                    unknown2: new POGOProtos.Networking.Envelopes.Unknown6.Unknown2({
+                        encrypted_signature: sigEncrypted
+                    })
+                }));
+
+                return resolve(envelope);
+            });
+        });
     }
 
     /**
@@ -175,13 +322,6 @@ class Client extends EventEmitter {
         if (this.options.hasOwnProperty(key)) {
             this.options[key] = val;
         }
-    }
-
-    makeRequest(req, ...args) {
-        if (methods.hasOwnProperty(req)) {
-            return methods[req].call(this, ...args);
-        }
-        throw Error(`Method ${req} does not exist`);
     }
 
     /**
@@ -257,216 +397,27 @@ class Client extends EventEmitter {
         return new POGOProtos.Networking.Envelopes.RequestEnvelope(envelopeData);
     }
 
-    /**
-     * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
-     * or adds the signature to an existing envelope.
-     * @private
-     * @param {Object[]} requests - Array of requests to build
-     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to sign
-     * @return {Promise} - A Promise that will be resolved with a RequestEnvelope instance
-     */
-    buildSignedEnvelope(requests, envelope) {
+    sendRequest(envelope) {
         return new Promise((resolve, reject) => {
-            if (!envelope) {
-                try {
-                    envelope = this.buildEnvelope(requests);
-                } catch (e) {
-                    reject(new retry.StopError(e));
-                }
-            }
-
-            if (!envelope.auth_ticket) {
-                // Can't sign before we have received an auth ticket
-                resolve(envelope);
-                return;
-            }
-
-            this.signatureBuilder.setAuthTicket(envelope.auth_ticket);
-            this.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.altitude);
-
-            this.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
-                if (err) {
-                    reject(new retry.StopError(err));
-                    return;
-                }
-
-                envelope.unknown6.push(new POGOProtos.Networking.Envelopes.Unknown6({
-                    request_type: 6,
-                    unknown2: new POGOProtos.Networking.Envelopes.Unknown6.Unknown2({
-                        encrypted_signature: sigEncrypted
-                    })
-                }));
-
-                resolve(envelope);
+            this.rpcRequest({
+                method: 'POST',
+                url: this.endpoint,
+                proxy: this.proxy,
+                body: envelope.toBuffer()
+            }, (err, response, body) => {
+                if (err) reject(Error(err));
+                resolve([response, body]);
             });
-        });
-    }
-
-    /**
-     * Executes an RPC call with the given list of requests, retrying if necessary.
-     * @private
-     * @param {Object[]} requests - Array of requests to send
-     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to use
-     * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
-     *     or true if there aren't any
-     */
-    callRPC(requests, envelope) {
-        // If the requests include a map objects request, make sure the minimum delay
-        // since the last call has passed
-        if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
-            let now = new Date().getTime(),
-                delayNeeded = this.lastMapObjectsCall + (this.options.mapObjectsMinDelay * 1000) - now;
-
-            if (delayNeeded > 0 && this.options.mapObjectsThrottling) {
-                return Promise.delay(delayNeeded).then(() => this.callRPC(requests, envelope));
+        }).spread((response, body) => {
+            if (response.statusCode === 200) return body;
+            if (response.statusCode >= 400 && response.statusCode < 500) {
+                /* These are permanent errors so throw StopError */
+                throw new retry.StopError(`Status code ${response.statusCode} received from HTTPS request`);
+            } else {
+                /* Anything else might be recoverable so throw regular Error */
+                throw Error(`Status code ${response.statusCode} received from HTTPS request`);
             }
-
-            this.lastMapObjectsCall = now;
-        }
-
-        if (this.options.maxTries <= 1) return this.tryCallRPC(requests, envelope);
-
-        return retry(() => this.tryCallRPC(requests, envelope), {
-            interval: 300,
-            backoff: 2,
-            max_tries: this.options.maxTries
         });
-    }
-
-    /**
-     * Executes an RPC call with the given list of requests.
-     * @private
-     * @param {Object[]} requests - Array of requests to send
-     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to use
-     * @return {Promise} - A Promise that will be resolved with the (list of) response messages,
-     *     or true if there aren't any
-     */
-    tryCallRPC(requests, envelope) {
-        return this.buildSignedEnvelope(requests, envelope)
-            .then(signedEnvelope => new Promise((resolve, reject) => {
-                this.rpcRequest({
-                    method: 'POST',
-                    url: this.endpoint,
-                    proxy: this.proxy,
-                    body: signedEnvelope.toBuffer()
-                }, (err, response, body) => {
-                    if (err) {
-                        reject(Error(err));
-                        return;
-                    }
-
-                    if (response.statusCode !== 200) {
-                        if (response.statusCode >= 400 && response.statusCode < 500) {
-                            /* These are permanent errors so throw StopError */
-                            reject(new retry.StopError(
-                                `Status code ${response.statusCode} received from HTTPS request`));
-                        } else {
-                            /* Anything else might be recoverable so throw regular Error */
-                            reject(Error(`Status code ${response.statusCode} received from HTTPS request`));
-                        }
-                        return;
-                    }
-
-                    let responseEnvelope;
-                    try {
-                        responseEnvelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
-                    } catch (e) {
-                        this.emit('parse-envelope-error', body, e);
-                        if (e.decoded) {
-                            responseEnvelope = e.decoded;
-                        } else {
-                            reject(new retry.StopError(e));
-                            return;
-                        }
-                    }
-
-                    this.emit('raw-response', responseEnvelope);
-
-                    if (responseEnvelope.error) {
-                        reject(new retry.StopError(responseEnvelope.error));
-                        return;
-                    }
-
-                    if (responseEnvelope.auth_ticket) this.authTicket = responseEnvelope.auth_ticket;
-
-                    if (this.endpoint === INITIAL_ENDPOINT) {
-                        /* status_code 102 seems to be invalid auth token,
-                           could use later when caching token. */
-                        if (responseEnvelope.status_code !== 53) {
-                            reject(Error('Fetching RPC endpoint failed, received status code ' +
-                                responseEnvelope.status_code));
-                            return;
-                        }
-
-                        if (!responseEnvelope.api_url) {
-                            reject(Error('Fetching RPC endpoint failed, none supplied in response'));
-                            return;
-                        }
-
-                        this.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
-
-                        this.emit('endpoint-response', {
-                            status_code: responseEnvelope.status_code,
-                            request_id: responseEnvelope.request_id.toString(),
-                            api_url: responseEnvelope.api_url
-                        });
-
-                        resolve(this.callRPC(requests, envelope));
-                        return;
-                    }
-
-                    /* These codes indicate invalid input, no use in retrying so throw StopError */
-                    if (responseEnvelope.status_code === 3 || responseEnvelope.status_code === 102) {
-                        reject(new retry.StopError(
-                            `Status code ${responseEnvelope.status_code} received from RPC`));
-                    }
-
-                    /* These can be temporary so throw regular Error */
-                    if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
-                        reject(Error(`Status code ${responseEnvelope.status_code} received from RPC`));
-                        return;
-                    }
-
-                    let responses = [];
-
-                    if (requests) {
-                        if (requests.length !== responseEnvelope.returns.length) {
-                            reject(Error('Request count does not match response count'));
-                            return;
-                        }
-
-                        for (let i = 0; i < responseEnvelope.returns.length; i++) {
-                            if (!requests[i].responseType) continue;
-
-                            let responseMessage;
-                            try {
-                                responseMessage = requests[i].responseType.decode(responseEnvelope.returns[
-                                    i]);
-                            } catch (e) {
-                                this.emit('parse-response-error', responseEnvelope.returns[i].toBuffer(), e);
-                                reject(new retry.StopError(e));
-                                return;
-                            }
-
-                            responses.push(responseMessage);
-                        }
-                    }
-
-                    this.emit('response', {
-                        status_code: responseEnvelope.status_code,
-                        request_id: responseEnvelope.request_id.toString(),
-                        responses: responses.map((r, h) => ({
-                            name: Utils.getEnumKeyByValue(RequestType, requests[h].type),
-                            type: requests[h].type,
-                            data: r
-                        }))
-                    });
-
-                    if (!responses.length) resolve(true);
-                    else if (responses.length === 1) resolve(responses[0]);
-                    else resolve(responses);
-                });
-            }));
     }
 
     /**
@@ -498,12 +449,10 @@ for (let method in methods) {
     if (methods.hasOwnProperty(method)) {
         Object.defineProperty(Client.prototype, method, {
             value: function(...args) {
-                return this.callRPC([this.makeRequest(method, ...args)]);
-            }
-        });
-        Object.defineProperty(Client.prototype, (method + 'Raw'), {
-            value: function(...args) {
-                return this.makeRequest(method, ...args);
+                let batch = this.batch();
+                batch[method](...args);
+                return batch.call();
+                // return this.callRPC([this.makeRequest(method, ...args)]);
             }
         });
     }
