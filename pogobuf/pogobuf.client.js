@@ -165,10 +165,11 @@ function Client() {
     };
     
     /**
-     * Enables or disables automatic Long.js object conversion in RPC responses
+     * Enables or disables automatic conversion of Long.js
+     * to primitive types in API response objects.
      * @param {boolean} enable
      */
-    this.setAutomaticLongConvertingEnabled = function(enable) {
+    this.setAutomaticLongConversionEnabled = function(enable) {
         if(typeof enable !== 'boolean') return;
         self.automaticLongConversionEnabled = enable;
     };
