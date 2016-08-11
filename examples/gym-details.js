@@ -11,7 +11,7 @@
 
 	It shows how to use the pogobuf library to perform requests and work with the returend data.
 
-	In addition to pogobuf, this example requires the npm packages s2geometry-node and node-geocoder.
+	In addition to pogobuf, this example requires the npm package node-geocoder.
 */
 
 const pogobuf = require('pogobuf'),
@@ -74,7 +74,8 @@ geocoder.geocode('2 Bryant St, San Francisco')
             console.log(gym.name);
             console.log('-'.repeat(gym.name.length));
 
-            var team = 'Owned by team: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.TeamColor, fortData.owned_by_team);
+            var team = 'Owned by team: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.TeamColor,
+                fortData.owned_by_team);
             if (fortData.is_in_battle) team += ' [IN BATTLE]';
             console.log(team);
 
@@ -83,8 +84,10 @@ geocoder.geocode('2 Bryant St, San Francisco')
             if (memberships && memberships.length) {
                 var highest = memberships[memberships.length - 1];
 
-                console.log('Highest Pokémon: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.PokemonId, highest.pokemon_data.pokemon_id) + ', ' + highest.pokemon_data.cp + ' CP');
-                console.log('Trainer: ' + highest.trainer_public_profile.name + ', level ' + highest.trainer_public_profile.level);
+                console.log('Highest Pokémon: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.PokemonId,
+                    highest.pokemon_data.pokemon_id) + ', ' + highest.pokemon_data.cp + ' CP');
+                console.log('Trainer: ' + highest.trainer_public_profile.name + ', level ' +
+                    highest.trainer_public_profile.level);
             }
 
             console.log();
