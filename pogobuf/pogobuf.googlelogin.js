@@ -1,5 +1,6 @@
 'use strict';
 
+const querystring = require('querystring');
 const GoogleOAuth = require('gpsoauthnode');
 const google = new GoogleOAuth();
 
@@ -98,11 +99,42 @@ function GoogleLogin() {
                         reject(Error(err.response.statusCode + ': ' + err.response.statusMessage));
                         return;
                     }
-
                     resolve(data);
                 });
         });
     };
 }
+
+/**
+ * Auth code can be retrieved after visiting `GoogleLogin.GET_AUTH_CODE_URL`
+ * @param {string} authCode
+ */
+GoogleLogin.prototype.loginWithAuthCode = function(authCode) {
+    return new Promise(function(resolve, reject){
+        var data = {
+            code: authCode,
+            client_id: '848232511240-73ri3t7plvk96pj4f85uj8otdat2alem.apps.googleusercontent.com',
+            client_secret: 'NCjF1TLi2CcY6t5mt0ZveuL7',
+            grant_type: 'authorization_code',
+            scope: 'openid email https://www.googleapis.com/auth/userinfo.email',
+            redirect_uri: 'urn:ietf:wg:oauth:2.0:oob'
+        };
+
+        google.request({
+            method: "POST",
+            url: 'https://www.googleapis.com/oauth2/v4/token',
+            contentType: "application/x-www-form-urlencoded",
+            data: querystring.stringify(data),
+            headers: {
+            }
+        }, function (err, data) {
+            if(err) throw err;
+            //TODO: add method to refresh token
+            resolve(data.id_token);
+        });
+    });
+}
+
+GoogleLogin.GET_AUTH_CODE_URL = 'https://accounts.google.com/o/oauth2/auth?client_id=848232511240-73ri3t7plvk96pj4f85uj8otdat2alem.apps.googleusercontent.com&redirect_uri=urn%3Aietf%3Awg%3Aoauth%3A2.0%3Aoob&response_type=code&scope=openid%20email%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email';
 
 module.exports = GoogleLogin;
