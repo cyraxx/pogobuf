@@ -1055,7 +1055,7 @@ function Client() {
                         }))
                     });
                     
-                    for(var i in responses) responses[i] = Utils.convertLongs(responses[i]);
+                    responses = Utils.convertLongs(responses);
 
                     if (!responses.length) resolve(true);
                     else if (responses.length === 1) resolve(responses[0]);
