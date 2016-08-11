@@ -253,7 +253,7 @@ module.exports = {
         for(var i in object) {
             if(object.hasOwnProperty(i)) {
                 if(Long.isLong(object[i]))
-                    object[i] = object[i].lessThanOrEqual(Number.MAX_SAFE_INTEGER) ? object[i].toNumber() : object[i].toString();
+                    object[i] = object[i].lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object[i].greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ? object[i].toNumber() : object[i].toString();
                 else if(typeof object[i] === 'object')
                     object[i] = this.convertLongs(object[i]);
             }
