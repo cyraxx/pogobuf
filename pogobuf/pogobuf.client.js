@@ -21,6 +21,9 @@ const DEFAULT_MAP_OBJECTS_DELAY = 5;
  * Pokémon Go RPC client.
  * @class Client
  * @memberof pogobuf
+ * @param {string} authType - Authentication provider type (ptc or google)
+ * @param {string} username - Username for authentication
+ * @param {string} password - Password for authentication
  */
 function Client(authType, username, password) {
     if (!(this instanceof Client)) {
@@ -36,11 +39,11 @@ function Client(authType, username, password) {
 
     /**
      * Sets the authentication type and token (required before making API calls).
-     * @param {string} authType - Authentication provider type (ptc or google)
+     * @param {string} authenticationType - Authentication provider type (ptc or google)
      * @param {string} authToken - Authentication token received from authentication provider
      */
-    this.setAuthInfo = function (authType, authToken) {
-        self.authType = authType;
+    this.setAuthInfo = function (authenticationType, authToken) {
+        self.authType = authenticationType;
         self.authToken = authToken;
     };
 
