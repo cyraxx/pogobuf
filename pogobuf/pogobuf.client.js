@@ -163,6 +163,15 @@ function Client() {
     this.setResponseCallback = function(callback) {
         self.on('raw-response', callback);
     };
+    
+    /**
+     * Enables or disables automatic Long.js object conversion in RPC responses
+     * @param {boolean} enable
+     */
+    this.setAutomaticLongConvertingEnabled = function(enable) {
+        if(typeof enable !== 'boolean') return;
+        self.automaticLongConversionEnabled = enable;
+    };
 
     /*
      * API CALLS (in order of RequestType enum)
@@ -760,6 +769,7 @@ function Client() {
     this.maxTries = 5;
     this.mapObjectsThrottlingEnabled = true;
     this.mapObjectsMinDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
+    this.automaticLongConversionEnabled = true;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -1055,7 +1065,7 @@ function Client() {
                         }))
                     });
                     
-                    responses = Utils.convertLongs(responses);
+                    if(self.automaticLongConversionEnabled) responses = Utils.convertLongs(responses);
 
                     if (!responses.length) resolve(true);
                     else if (responses.length === 1) resolve(responses[0]);
