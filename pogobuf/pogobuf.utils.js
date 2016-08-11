@@ -248,7 +248,7 @@ module.exports = {
     convertLongs: function(object) {
         if(!object || typeof object !== 'object') return new Object();
         
-        if(Long.isLong(object)) return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) ? object.toNumber() : object.toString();
+        if(Long.isLong(object)) return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ? object.toNumber() : object.toString();
 
         for(var i in object) {
             if(object.hasOwnProperty(i)) {
