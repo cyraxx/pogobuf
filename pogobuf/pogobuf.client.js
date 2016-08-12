@@ -11,7 +11,7 @@ const DEFAULTOPTIONS = {
     mapObjectsThrottling: true,
     mapObjectsMinDelay: 5,
     maxTries: 5,
-    appVersion: '0.31.1',
+    appVersion: '0.33.0',
     autoRetry: true,
     retryDelay: 500,
     retryBackoff: 2,
@@ -134,13 +134,14 @@ class Client extends EventEmitter {
             // Handle redirect
             if (envelope.status_code === 53) {
                 this.auth_ticket = envelope.auth_ticket;
-                this.endpoint = envelope.api_url;
+                this.endpoint = `https://${envelope.api_url}/rpc`;
+                return this.sendEnvelopeRequest(envelopeRequest);
             }
             // Do required stuff with result
             return responses.length === 1 ? responses[0] : responses;
         }).catch(reason => {
             // Handle the error, retry-logic, etc
-            console.log(reason);
+            throw reason;
         });
         /*
          * Old get envelope and do request logic

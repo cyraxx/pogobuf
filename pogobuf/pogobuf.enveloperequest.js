@@ -36,6 +36,10 @@ function RequestError(message, fatal = false, statusCode = null) {
     this.status_code = statusCode;
     this.stack = (new Error()).stack;
 }
+RequestError.prototype.toString = function() {
+    let stack = this.stack.split('\n').slice(2).join('\n');
+    return `${this.name}: ${this.message}\n${stack}`;
+}
 
 /**
  * Pokémon Go EnvelopeRequest
@@ -264,7 +268,7 @@ class EnvelopeRequest {
 
             let responses = [];
 
-            if (this.requests) {
+            if (this.requests && envelope.status_code !== 53) {
                 if (this.requests.length !== envelope.returns.length) {
                     return reject(new RequestError('Request count does not match response count'));
                 }
