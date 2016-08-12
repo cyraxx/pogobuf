@@ -20,6 +20,7 @@ module.exports = {
         "curly": [2, "multi-line"],
         "no-use-before-define": 1,
         "eol-last": 0,
+        "no-underscore-dangle": 0,
         "max-len": [1, {
             "tabWidth": 4,
             "code": 120,
