@@ -1,16 +1,10 @@
 'use strict';
 
 const
-    crypto = require('crypto'),
     EventEmitter = require('events').EventEmitter,
-    Long = require('long'),
-    POGOProtos = require('node-pogo-protos'),
-    Promise = require('bluebird'),
-    Utils = require('./pogobuf.utils.js'),
     methods = require('./pogobuf.methods.js'),
     EnvelopeRequest = require('./pogobuf.enveloperequest.js');
 
-const RequestType = POGOProtos.Networking.Requests.RequestType;
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
 const DEFAULTOPTIONS = {
     proxy: null,
@@ -36,10 +30,6 @@ class Client extends EventEmitter {
     }
 
     /**
-     * PUBLIC METHODS
-     */
-
-    /**
      * Sets the authentication type and token (required before making API calls).
      * @param {string} authType - Authentication provider type (ptc or google)
      * @param {string} authToken - Authentication token received from authentication provider
@@ -63,7 +53,7 @@ class Client extends EventEmitter {
         this.playerLongitude = longitude;
         this.playerAltitude = altitude;
     }
-    
+
     /**
      * Change a option in the client, see init for more info
      * @param {string} key - The name of the option
@@ -78,11 +68,11 @@ class Client extends EventEmitter {
     /**
      * Performs the initial API call.
      * @param {object} options - Set options for the client
-     * @param {string} object.proxy - Sets a proxy address to use for the HTTPS RPC requests.
-     * @param {bool} object.mapObjectsThrottling - Enables or disables the
+     * @param {string} options.proxy - Sets a proxy address to use for the HTTPS RPC requests.
+     * @param {bool} options.mapObjectsThrottling - Enables or disables the
      * built-in throttling of getMapObjects() calls
-     * @param {number} object.mapObjectsMinDelay - Minimum delay between getMapObjects() calls
-     * @param {number} object.maxTries - Maximum number of times to retry a RPC call when it fails
+     * @param {number} options.mapObjectsMinDelay - Minimum delay between getMapObjects() calls
+     * @param {number} options.maxTries - Maximum number of times to retry a RPC call when it fails
      * @return {Promise} promise
      */
     init(options = {}) {
@@ -107,18 +97,22 @@ class Client extends EventEmitter {
     }
 
     /**
-     * Create a batch call
-     * @returns {object} batch request object
+     * Create a batch object which you can add methods to and then do `.call()`
+     * @returns {EnvelopeRequest} batch request object
      */
     batch() {
         return new EnvelopeRequest(this);
     }
-    
+
     /**
      * Takes a EnvelopeRequest instance and sends it
-     * @returns {object} batch request object
+     * @param {EnvelopeRequest} envelopeRequest
+     * @returns {promise} Fufills with the decoded result given from RPC call
      */
     sendEnvelopeRequest(envelopeRequest) {
+        if (!envelopeRequest instanceof EnvelopeRequest) {
+            return Promise.reject(new Error('Missing EnvelopeRequest paramater'));
+        }
         // TODO: don't always rebuild
         return envelopeRequest.buildEnvelope({
             latitude: this.playerLatitude,
@@ -148,6 +142,44 @@ class Client extends EventEmitter {
             // Handle the error, retry-logic, etc
             console.log(reason);
         });
+        /*
+         * Old get envelope and do request logic
+         * TODO: Apply this to the code above
+        let getEnvelope;
+
+        if (req._envelope) {
+            getEnvelope = Promise.resolve(req._envelope);
+        } else {
+            let basicEnvelope = this.buildEnvelope(requests);
+            getEnvelope = this.signEnvelope(basicEnvelope).then(signedEnvelope => {
+                req._envelope = signedEnvelope;
+                return signedEnvelope;
+            });
+        }
+
+        // If needed, delay request for getMapObjects()
+        if (req._containsMapCall && this.options.mapObjectsThrottling) {
+            let now = new Date().getTime(),
+                delayNeeded = this.lastMapObjectsCall
+                    + (this.options.mapObjectsMinDelay * 1000) - now;
+
+            if (delayNeeded > 0) {
+                console.log('DELAYING MAP REQUEST BY', delayNeeded);
+                return Promise.delay(delayNeeded).then(() => this.call(req));
+            }
+            this.lastMapObjectsCall = now;
+        }
+
+        return getEnvelope.then(envelope => this.callRPC(envelope, requests)).catch(reason => {
+            if (reason.abort) throw reason;
+            if (++req._try >= this.options.retryMax) {
+              throw new Error('RPC Call passed retry limit:' + reason);
+            }
+            let delay = this.options.retryDelay * this.options.retryBackoff * req._try;
+            console.log('DELAYING BY ' + delay + ' MS');
+            return Promise.delay(delay).then(() => this.call(req));
+        });
+        */
     }
 
     /**
@@ -183,7 +215,6 @@ for (let method in methods) {
                 let batch = this.batch();
                 batch[method](...args);
                 return batch.call();
-                // return this.callRPC([this.makeRequest(method, ...args)]);
             }
         });
     }

@@ -23,17 +23,23 @@ const httpClient = http.defaults({
     encoding: null
 });
 
-function RequestError(message, fatal = false, status_code = null) {
-  this.name = 'RequestError';
-  this.message = message;
-  this.fatal = fatal;
-  this.status_code = status_code;
-  this.stack = (new Error()).stack;
+/**
+ * Custom Error object, allows defining additional properties
+ * @param {string} message - The error message
+ * @param {bool} fatal - Can the request be retried
+ * @param {number|null} statusCode - Received RPC status_code
+ */
+function RequestError(message, fatal = false, statusCode = null) {
+    this.name = 'RequestError';
+    this.message = message;
+    this.fatal = fatal;
+    this.status_code = statusCode;
+    this.stack = (new Error()).stack;
 }
 
 /**
- * Pokémon Go Request
- * @class Client
+ * Pokémon Go EnvelopeRequest
+ * @class EnvelopeRequest
  * @memberof pogobuf
  */
 class EnvelopeRequest {
@@ -45,7 +51,7 @@ class EnvelopeRequest {
         this.containsMapCall = false;
         this.try = 0;
     }
-    
+
     /**
      * Generates a random request ID
      * @private
@@ -59,54 +65,19 @@ class EnvelopeRequest {
             true
         );
     }
-    
+
     /**
-     * Send and decode the EnvelopeRequest
-     * @param {object} req
-     * @param {array} requests
-     * @returns {promise} shit
+     * Build, send and decode the EnvelopeRequest
+     * @returns {promise} fufills when EnvelopeRequest recieved and decoded successful result
      */
     call() {
-        this.client.sendEnvelopeRequest(this);
-        /*
-        let getEnvelope;
-
-        if (req._envelope) {
-            getEnvelope = Promise.resolve(req._envelope);
-        } else {
-            let basicEnvelope = this.buildEnvelope(requests);
-            getEnvelope = this.signEnvelope(basicEnvelope).then(signedEnvelope => {
-                req._envelope = signedEnvelope;
-                return signedEnvelope;
-            });
-        }
-
-        // If needed, delay request for getMapObjects()
-        if (req._containsMapCall && this.options.mapObjectsThrottling) {
-            let now = new Date().getTime(),
-                delayNeeded = this.lastMapObjectsCall + (this.options.mapObjectsMinDelay * 1000) - now;
-
-            if (delayNeeded > 0) {
-                console.log('DELAYING MAP REQUEST BY', delayNeeded);
-                return Promise.delay(delayNeeded).then(() => this.call(req));
-            }
-            this.lastMapObjectsCall = now;
-        }
-
-        return getEnvelope.then(envelope => this.callRPC(envelope, requests)).catch(reason => {
-            if (reason.abort) throw reason;
-            if (++req._try >= this.options.retryMax) throw new Error('RPC Call passed retry limit:' + reason);
-            let delay = this.options.retryDelay * this.options.retryBackoff * req._try;
-            console.log('DELAYING BY ' + delay + ' MS');
-            return Promise.delay(delay).then(() => this.call(req));
-        });
-        */
+        return this.client.sendEnvelopeRequest(this);
     }
 
     /**
      * Creates an RPC envelope with the given list of requests.
      * @private
-     * @param {Object[]} requests - Array of requests to build
+     * @param {Object[]} options - Array of requests to build
      * @return {POGOProtos.Networking.Envelopes.RequestEnvelope}
      */
     buildEnvelope(options) {
@@ -152,7 +123,7 @@ class EnvelopeRequest {
             }
 
             this.client.emit('request-envelope', envelope);
-            
+
             this.envelope = new POGOProtos.Networking.Envelopes.RequestEnvelope(envelope);
             resolve(this.envelope);
         });
@@ -180,12 +151,12 @@ class EnvelopeRequest {
                         encrypted_signature: sigEncrypted
                     })
                 }));
-                
+
                 return resolve(this.envelope);
             });
         });
     }
-    
+
     /**
      * Sends the envelope
      * @return {Promise} - A Promise that will be resolved with a RequestEnvelope instance
@@ -277,7 +248,7 @@ class EnvelopeRequest {
 
             /* These can be temporary so throw regular Error */
             if (!~[1, 2, 53].indexOf(envelope.status_code)) {
-                return reject(RequestError(
+                return reject(new RequestError(
                     `Status code ${envelope.status_code} received from RPC`,
                     false,
                     envelope.status_code
@@ -288,7 +259,7 @@ class EnvelopeRequest {
 
             if (this.requests) {
                 if (this.requests.length !== envelope.returns.length) {
-                    return reject(new Error('Request count does not match response count'));
+                    return reject(new RequestError('Request count does not match response count'));
                 }
 
                 for (let i = 0; i < envelope.returns.length; i++) {
@@ -297,9 +268,9 @@ class EnvelopeRequest {
                     let responseMessage;
                     try {
                         responseMessage = this.requests[i].responseType.decode(envelope.returns[i]);
-                    } catch (e) {
-                        this.client.emit('parse-response-error', envelope.returns[i].toBuffer(), e);
-                        throw new retry.StopError(e);
+                    } catch (err) {
+                        this.client.emit('parse-response-error', envelope.returns[i].toBuffer(), err);
+                        return reject(new RequestError(err));
                     }
 
                     responses.push(responseMessage);
@@ -315,7 +286,7 @@ class EnvelopeRequest {
                     data: request
                 }))
             });
-            
+
             resolve([responses, envelope]);
         });
     }
