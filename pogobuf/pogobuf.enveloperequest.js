@@ -118,7 +118,7 @@ class EnvelopeRequest {
 
                 envelope.requests = this.requests.map(request => ({
                     request_type: request.type,
-                    request_message: request.message ? request.message.encode() : undefined
+                    request_message: request.message ? request.message.encode() : undefined // eslint-disable-line
                 }));
             }
 
@@ -133,7 +133,8 @@ class EnvelopeRequest {
      * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
      * or adds the signature to an existing envelope.
      * @private
-     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to sign
+     * @param {object} options
+     * @param {string} options.auth_ticket
      * @return {Promise} - A Promise that will be resolved with a RequestEnvelope instance
      */
     signEnvelope(options) {
@@ -159,12 +160,17 @@ class EnvelopeRequest {
 
     /**
      * Sends the envelope
+     * @param {object} options
+     * @param {string} options.endpoint
+     * @param {string} options.proxy
      * @return {Promise} - A Promise that will be resolved with a RequestEnvelope instance
      */
     send(options) {
         return new Promise((resolve, reject) => {
-            if (!this.envelope) return reject(new RequestError('Cannot send EnvelopeRequest, envelope is not build', true));
-            httpClient({
+            if (!this.envelope) {
+                return reject(new RequestError('Cannot send EnvelopeRequest, envelope is not build', true));
+            }
+            return httpClient({
                 url: options.endpoint,
                 proxy: options.proxy,
                 body: this.envelope.toBuffer()
@@ -173,21 +179,21 @@ class EnvelopeRequest {
                 resolve([response, body]);
             });
         }).spread((response, body) => {
-            if (response.statusCode === 200) {
-                return body;
-            }
             if (response.statusCode >= 400 && response.statusCode < 500) {
                 /* These are permanent errors so throw StopError */
                 throw new RequestError(`Status code ${response.statusCode} received from HTTPS request`, true);
+            } else if (response.statusCode !== 200) {
+                /* Anything else might be recoverable so throw regular Error */
+                throw Error(`Status code ${response.statusCode} received from HTTPS request`);
             }
-            /* Anything else might be recoverable so throw regular Error */
-            throw Error(`Status code ${response.statusCode} received from HTTPS request`);
+            return body;
         });
     }
 
     /**
      * Decode the response body from `send()`
-     * @return {Promise} - A Promise that will be resolved decoded response
+     * @param {buffer} body - encoded ResponseEnvelope
+     * @return {Promise} A Promise that will be resolved decoded response
      */
     decode(body) {
         return new Promise((resolve, reject) => {
@@ -199,7 +205,8 @@ class EnvelopeRequest {
                 if (error.decoded) {
                     envelope = error.decoded;
                 } else {
-                    throw new retry.StopError(error);
+                    error.fatal = true;
+                    return reject(error);
                 }
             }
 
@@ -287,7 +294,7 @@ class EnvelopeRequest {
                 }))
             });
 
-            resolve([responses, envelope]);
+            return resolve([responses, envelope]);
         });
     }
 }
