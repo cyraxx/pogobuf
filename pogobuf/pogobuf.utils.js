@@ -223,19 +223,21 @@ module.exports = {
     /**
      * Utility method to get the Individual Values from Pokémon
      * @param {object} pokemon - A pokemon_data structure
-     * @param {integer} [decimals=-1] - Amount of decimals, >20 and negative values do not round
+     * @param {integer} [decimals=-1] - Amount of decimals, negative values do not round, max 20
      * @returns {object}
      * @static
      */
     getIVsFromPokemon: function(pokemon, decimals) {
         if(typeof decimals === 'undefined') decimals = -1;
         
+        decimals = Math.min(decimals, 20);
+        
         var att = pokemon.individual_attack;
         var def = pokemon.individual_defense;
         var stam = pokemon.individual_stamina;
         
         var unrounded_percent = (att + def + stam) / 45 * 100;
-        var percent = decimals < 0 || decimals > 20 ? unrounded_percent : +unrounded_percent.toFixed(decimals);
+        var percent = decimals < 0 ? unrounded_percent : +unrounded_percent.toFixed(decimals);
         
         return {
             att: att,
