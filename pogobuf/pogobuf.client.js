@@ -894,12 +894,12 @@ function Client() {
                     return;
                 }
 
-                envelope.unknown6.push(new POGOProtos.Networking.Envelopes.Unknown6({
+                envelope.unknown6 = new POGOProtos.Networking.Envelopes.Unknown6({
                     request_type: 6,
                     unknown2: new POGOProtos.Networking.Envelopes.Unknown6.Unknown2({
                         encrypted_signature: sigEncrypted
                     })
-                }));
+                });
 
                 resolve(envelope);
             });
