@@ -87,34 +87,34 @@ module.exports = {
 
         inventory.inventory_delta.inventory_items.forEach(item => {
             var itemdata = item.inventory_item_data;
-            if (itemdata.pokemon_data) {
+            if (Object.keys(itemdata.pokemon_data == null ? {} : itemdata.pokemon_data).length !== 0) {
                 ret.pokemon.push(itemdata.pokemon_data);
             }
-            if (itemdata.item) {
+            if (Object.keys(itemdata.item == null ? {} : itemdata.item).length !== 0) {
                 ret.items.push(itemdata.item);
             }
-            if (itemdata.pokedex_entry) {
+            if (Object.keys(itemdata.pokedex_entry == null ? {} : itemdata.pokedex_entry).length !== 0) {
                 ret.pokedex.push(itemdata.pokedex_entry);
             }
             if (itemdata.player_stats) {
                 ret.player = itemdata.player_stats;
             }
-            if (itemdata.player_currency) {
+            if (Object.keys(itemdata.player_currency == null ? {} : itemdata.player_currency).length !== 0) {
                 ret.currency.push(itemdata.player_currency);
             }
             if (itemdata.player_camera) {
                 ret.camera = itemdata.player_camera;
             }
-            if (itemdata.inventory_upgrades) {
+            if (Object.keys(itemdata.inventory_upgrades == null ? {} : itemdata.inventory_upgrades).length !== 0) {
                 ret.inventory_upgrades.push(itemdata.inventory_upgrades);
             }
-            if (itemdata.applied_items) {
+            if (Object.keys(itemdata.applied_items == null ? {} : itemdata.applied_items).length !== 0) {
                 ret.applied_items.push(itemdata.applied_items);
             }
-            if (itemdata.egg_incubators) {
+            if (Object.keys(itemdata.egg_incubators == null ? {} : itemdata.egg_incubators).length !== 0) {
                 ret.egg_incubators.push(itemdata.egg_incubators);
             }
-            if (itemdata.candy) {
+            if (Object.keys(itemdata.candy == null ? {} : itemdata.candy).length !== 0) {
                 ret.candies.push(itemdata.candy);
             }
         });
@@ -151,22 +151,22 @@ module.exports = {
         };
 
         templates.item_templates.forEach(template => {
-            if (template.pokemon_settings) {
+            if (Object.keys(template.pokemon_settings == null ? {} : template.pokemon_settings).length !== 0) {
                 ret.pokemon_settings.push(template.pokemon_settings);
             }
-            if (template.item_settings) {
+            if (Object.keys(template.item_settings == null ? {} : template.item_settings).length !== 0) {
                 ret.item_settings.push(template.item_settings);
             }
-            if (template.move_settings) {
+            if (Object.keys(template.move_settings == null ? {} : template.move_settings).length !== 0) {
                 ret.move_settings.push(template.move_settings);
             }
-            if (template.move_sequence_settings) {
+            if (Object.keys(template.move_sequence_settings == null ? {} : template.move_sequence_settings).length !== 0) {
                 ret.move_sequence_settings.push(template.move_sequence_settings.sequence);
             }
-            if (template.type_effective) {
+            if (Object.keys(template.type_effective == null ? {} : template.type_effective).length !== 0) {
                 ret.type_effective_settings.push(template.type_effective);
             }
-            if (template.badge_settings) {
+            if (Object.keys(template.badge_settings == null ? {} : template.badge_settings).length !== 0) {
                 ret.badge_settings.push(template.badge_settings);
             }
             if (template.camera) {
@@ -184,7 +184,7 @@ module.exports = {
             if (template.encounter_settings) {
                 ret.encounter_settings = template.encounter_settings;
             }
-            if (template.iap_item_display) {
+            if (Object.keys(template.iap_item_display == null ? {} : template.iap_item_display).length !== 0) {
                 ret.iap_item_display.push(template.iap_item_display);
             }
             if (template.iap_settings) {
@@ -229,16 +229,16 @@ module.exports = {
      */
     getIVsFromPokemon: function(pokemon, decimals) {
         if(typeof decimals === 'undefined') decimals = -1;
-        
+
         decimals = Math.min(decimals, 20);
-        
+
         var att = pokemon.individual_attack;
         var def = pokemon.individual_defense;
         var stam = pokemon.individual_stamina;
-        
+
         var unrounded_percent = (att + def + stam) / 45 * 100;
         var percent = decimals < 0 ? unrounded_percent : +unrounded_percent.toFixed(decimals);
-        
+
         return {
             att: att,
             def: def,
@@ -246,7 +246,7 @@ module.exports = {
             percent: percent
         };
     },
-    
+
     /**
      * Utility method to convert all Long.js objects to integers or strings
      * @param {object} object – An object
@@ -255,7 +255,7 @@ module.exports = {
      */
     convertLongs: function(object) {
         if(!object || typeof object !== 'object') return new Object();
-        
+
         if(Long.isLong(object)) return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ? object.toNumber() : object.toString();
 
         for(var i in object) {
