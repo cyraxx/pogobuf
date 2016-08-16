@@ -163,14 +163,14 @@ function Client() {
     this.setResponseCallback = function(callback) {
         self.on('raw-response', callback);
     };
-    
+
     /**
      * Enables or disables automatic conversion of Long.js
      * to primitive types in API response objects.
      * @param {boolean} enable
      */
     this.setAutomaticLongConversionEnabled = function(enable) {
-        if(typeof enable !== 'boolean') return;
+        if (typeof enable !== 'boolean') return;
         self.automaticLongConversionEnabled = enable;
     };
 
@@ -1065,8 +1065,8 @@ function Client() {
                             data: r
                         }))
                     });
-                    
-                    if(self.automaticLongConversionEnabled) responses = Utils.convertLongs(responses);
+
+                    if (self.automaticLongConversionEnabled) responses = Utils.convertLongs(responses);
 
                     if (!responses.length) resolve(true);
                     else if (responses.length === 1) resolve(responses[0]);
