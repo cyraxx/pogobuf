@@ -228,17 +228,17 @@ module.exports = {
      * @static
      */
     getIVsFromPokemon: function(pokemon, decimals) {
-        if(typeof decimals === 'undefined') decimals = -1;
-        
+        if (typeof decimals === 'undefined') decimals = -1;
+
         decimals = Math.min(decimals, 20);
-        
-        var att = pokemon.individual_attack;
-        var def = pokemon.individual_defense;
-        var stam = pokemon.individual_stamina;
-        
-        var unrounded_percent = (att + def + stam) / 45 * 100;
-        var percent = decimals < 0 ? unrounded_percent : +unrounded_percent.toFixed(decimals);
-        
+
+        var att = pokemon.individual_attack,
+            def = pokemon.individual_defense,
+            stam = pokemon.individual_stamina;
+
+        var unroundedPercentage = (att + def + stam) / 45 * 100;
+        var percent = decimals < 0 ? unroundedPercentage : +unroundedPercentage.toFixed(decimals);
+
         return {
             att: att,
             def: def,
@@ -246,7 +246,7 @@ module.exports = {
             percent: percent
         };
     },
-    
+
     /**
      * Utility method to convert all Long.js objects to integers or strings
      * @param {object} object – An object
@@ -254,16 +254,21 @@ module.exports = {
      * @static
      */
     convertLongs: function(object) {
-        if(!object || typeof object !== 'object') return new Object();
-        
-        if(Long.isLong(object)) return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ? object.toNumber() : object.toString();
+        if (!object || typeof object !== 'object') return new Object();
 
-        for(var i in object) {
-            if(object.hasOwnProperty(i)) {
-                if(Long.isLong(object[i]))
-                    object[i] = object[i].lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object[i].greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ? object[i].toNumber() : object[i].toString();
-                else if(typeof object[i] === 'object')
+        if (Long.isLong(object)) {
+            return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ?
+                object.toNumber() : object.toString();
+        }
+
+        for (var i in object) {
+            if (object.hasOwnProperty(i)) {
+                if (Long.isLong(object[i])) {
+                    object[i] = object[i].lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object[i].greaterThanOrEqual(
+                        Number.MIN_SAFE_INTEGER) ? object[i].toNumber() : object[i].toString();
+                } else if (typeof object[i] === 'object') {
                     object[i] = this.convertLongs(object[i]);
+                }
             }
         }
 
