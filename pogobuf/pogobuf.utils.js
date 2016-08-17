@@ -254,7 +254,7 @@ module.exports = {
      * @static
      */
     convertLongs: function(object) {
-        if (!object || typeof object !== 'object') return new Object();
+        if (!object || typeof object !== 'object') return object;
 
         if (Long.isLong(object)) {
             return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ?
