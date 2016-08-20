@@ -74,7 +74,7 @@ function Client() {
         self.endpoint = INITIAL_ENDPOINT;
 
         return self.batchStart()
-            .getPlayer('0.31.1')
+            .getPlayer()
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()
@@ -179,12 +179,10 @@ function Client() {
         });
     };
 
-    this.getPlayer = function(appVersion) {
+    this.getPlayer = function() {
         return self.callOrChain({
             type: RequestType.GET_PLAYER,
-            message: new RequestMessages.GetPlayerMessage({
-                app_version: appVersion
-            }),
+            message: new RequestMessages.GetPlayerMessage({}),
             responseType: Responses.GetPlayerResponse
         });
     };
