@@ -74,7 +74,7 @@ function Client() {
         self.endpoint = INITIAL_ENDPOINT;
 
         return self.batchStart()
-            .getPlayer('0.31.1')
+            .getPlayer()
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()
