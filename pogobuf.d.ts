@@ -1,4 +1,4 @@
-// TODO: Create POGOProtos.d.ts typings and implement here instead of returning any
+/// <reference path="../node-pogo-protos/pogo-protos.d.ts" />
 
 /**
  * Pogobuf typings created with <3 by hands.
@@ -33,7 +33,13 @@ declare module 'pogobuf' {
         /**
          * Performs the initial API call.
          */
-        init(): Promise<any>;
+        init(): Promise<[
+            POGOProtos.Networking.Responses.GetPlayerResponse,
+            POGOProtos.Networking.Responses.GetHatchedEggsResponse,
+            POGOProtos.Networking.Responses.GetInventoryResponse,
+            POGOProtos.Networking.Responses.CheckAwardedBadgesResponse,
+            POGOProtos.Networking.Responses.DownloadSettingsResponse
+        ]>;
 
         /**
          * Sets batch mode. All further API requests will be held and executed in one RPC call when batchCall() is called.
@@ -81,109 +87,254 @@ declare module 'pogobuf' {
 
         // Pokémon Go API methods
 
-        addFortModifier(modifierItemID, fortID: string): Promise<any>;
+        addFortModifier(
+            modifierItemID: POGOProtos.Inventory.Item.ItemId,
+            fortID: string
+        ): Promise<POGOProtos.Networking.Responses.AddFortModifierResponse>;
 
-        attackGym(gymID, battleID, attackActions, lastRetrievedAction): Promise<any>;
+        attackGym(
+            gymID: string,
+            battleID: string,
+            attackActions: POGOProtos.Data.Battle.BattleAction[],
+            lastRetrievedAction: POGOProtos.Data.Battle.BattleAction
+        ): Promise<POGOProtos.Networking.Responses.AttackGymResponse>;
 
-        catchPokemon(encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon, spinModifier, normalizedHitPosition): Promise<any>;
+        catchPokemon(
+            encounterID: string,
+            pokeballItemID: POGOProtos.Inventory.Item.ItemId,
+            normalizedReticleSize: number,
+            spawnPointID: string,
+            hitPokemon: boolean,
+            spinModifier: number,
+            normalizedHitPosition: number
+        ): Promise<POGOProtos.Networking.Responses.CatchPokemonResponse>;
 
-        checkAwardedBadges(): Promise<any>;
+        checkAwardedBadges(
+        ): Promise<POGOProtos.Networking.Responses.CheckAwardedBadgesResponse>;
 
-        checkCodenameAvailable(codename): Promise<any>;
+        checkCodenameAvailable(
+            codename: string
+        ): Promise<POGOProtos.Networking.Responses.CheckCodenameAvailableResponse>;
 
-        claimCodename(codename): Promise<any>;
+        claimCodename(
+            codename: string
+        ): Promise<POGOProtos.Networking.Responses.ClaimCodenameResponse>;
 
-        collectDailyBonus(): Promise<any>;
+        collectDailyBonus(
+        ): Promise<POGOProtos.Networking.Responses.CollectDailyBonusResponse>;
 
-        collectDailyDefenderBonus(): Promise<any>;
+        collectDailyDefenderBonus(
+        ): Promise<POGOProtos.Networking.Responses.CollectDailyDefenderBonusResponse>;
 
-        diskEncounter(encounterID, fortID): Promise<any>;
+        diskEncounter(
+            encounterID: string,
+            fortID: string
+        ): Promise<POGOProtos.Networking.Responses.DiskEncounterResponse>;
 
-        downloadItemTemplates(): Promise<any>;
+        downloadItemTemplates(
+        ): Promise<POGOProtos.Networking.Responses.DownloadItemTemplatesResponse>;
 
-        downloadRemoteConfigVersion(platform, deviceManufacturer, deviceModel, locale, appVersion): Promise<any>;
+        downloadRemoteConfigVersion(
+            platform: POGOProtos.Enums.Platform,
+            deviceManufacturer: string,
+            deviceModel: string,
+            locale: string,
+            appVersion: number
+        ): Promise<POGOProtos.Networking.Responses.DownloadRemoteConfigVersionResponse>;
 
-        downloadSettings(hash): Promise<any>;
+        downloadSettings(
+            hash: string
+        ): Promise<POGOProtos.Networking.Responses.DownloadSettingsResponse>;
 
-        echo(): Promise<any>;
+        echo(
+        ): Promise<POGOProtos.Networking.Responses.EchoResponse>;
 
-        encounter(encounterID, spawnPointID): Promise<any>;
+        encounter(
+            encounterID: string,
+            spawnPointID: string
+        ): Promise<POGOProtos.Networking.Responses.EncounterResponse>;
 
-        encounterTutorialComplete(pokemonID): Promise<any>;
+        encounterTutorialComplete(
+            pokemonID: POGOProtos.Enums.PokemonId
+        ): Promise<POGOProtos.Networking.Responses.EncounterTutorialCompleteResponse>;
 
-        equipBadge(badgeType): Promise<any>;
+        equipBadge(
+            badgeType: POGOProtos.Enums.BadgeType
+        ): Promise<POGOProtos.Networking.Responses.EquipBadgeResponse>;
 
-        evolvePokemon(pokemonID): Promise<any>;
+        evolvePokemon(
+            pokemonID: string): Promise<POGOProtos.Networking.Responses.EvolvePokemonResponse>;
 
-        fortDeployPokemon(fortID, pokemonID): Promise<any>;
+        fortDeployPokemon(
+            fortID: string,
+            pokemonID: string
+        ): Promise<POGOProtos.Networking.Responses.FortDeployPokemonResponse>;
 
-        fortDetails(fortID, fortLatitude, fortLongitude): Promise<any>;
+        fortDetails(
+            fortID: string,
+            fortLatitude: number,
+            fortLongitude: number
+        ): Promise<POGOProtos.Networking.Responses.FortDetailsResponse>;
 
-        fortRecallPokemon(fortID, pokemonID): Promise<any>;
+        fortRecallPokemon(
+            fortID: string,
+            pokemonID: string
+        ): Promise<POGOProtos.Networking.Responses.FortRecallPokemonResponse>;
 
-        fortSearch(fortID, fortLatitude, fortLongitude): Promise<any>;
+        fortSearch(
+            fortID: string,
+            fortLatitude: number,
+            fortLongitude: number
+        ): Promise<POGOProtos.Networking.Responses.FortSearchResponse>;
 
-        getAssetDigest(platform, deviceManufacturer, deviceModel, locale, appVersion): Promise<any>;
+        getAssetDigest(
+            platform: POGOProtos.Enums.Platform,
+            deviceManufacturer: string,
+            deviceModel: string,
+            locale: string,
+            appVersion: string
+        ): Promise<POGOProtos.Networking.Responses.GetAssetDigestResponse>;
 
-        getDownloadURLs(assetIDs): Promise<any>;
+        getDownloadURLs(
+            assetIDs: string[]
+        ): Promise<POGOProtos.Networking.Responses.GetDownloadUrlsResponse>;
 
-        getGymDetails(gymID, gymLatitude, gymLongitude): Promise<any>;
+        getGymDetails(
+            gymID: string,
+            gymLatitude: number,
+            gymLongitude: number
+        ): Promise<POGOProtos.Networking.Responses.GetGymDetailsResponse>;
 
-        getHatchedEggs(): Promise<any>;
+        getHatchedEggs(
+        ): Promise<POGOProtos.Networking.Responses.GetHatchedEggsResponse>;
 
-        getIncensePokemon(): Promise<any>;
+        getIncensePokemon(
+        ): Promise<POGOProtos.Networking.Responses.GetIncensePokemonResponse>;
 
-        getInventory(lastTimestamp): Promise<any>;
+        getInventory(
+            lastTimestamp: string
+        ): Promise<POGOProtos.Networking.Responses.GetInventoryResponse>;
 
-        getMapObjects(cellIDs: string[], sinceTimestamps: any): Promise<any>;
+        getMapObjects(
+            cellIDs: string[],
+            sinceTimestamps: any
+        ): Promise<POGOProtos.Networking.Responses.GetMapObjectsResponse>;
 
-        getPlayer(appVersion): Promise<any>;
+        getPlayer(
+            appVersion: string
+        ): Promise<POGOProtos.Networking.Responses.GetPlayerResponse>;
 
-        getPlayerProfile(playerName): Promise<any>;
+        getPlayerProfile(
+            playerName: string
+        ): Promise<POGOProtos.Networking.Responses.GetPlayerProfileResponse>;
 
-        getSuggestedCodenames(): Promise<any>;
+        getSuggestedCodenames(
+        ): Promise<POGOProtos.Networking.Responses.GetSuggestedCodenamesResponse>;
 
-        incenseEncounter(encounterID, encounterLocation): Promise<any>;
+        incenseEncounter(
+            encounterID: string,
+            encounterLocation: string
+        ): Promise<POGOProtos.Networking.Responses.IncenseEncounterResponse>;
 
-        levelUpRewards(level): Promise<any>;
+        levelUpRewards(
+            level: number
+        ): Promise<POGOProtos.Networking.Responses.LevelUpRewardsResponse>;
 
-        markTutorialComplete(tutorialsCompleted, sendMarketingEmails, sendPushNotifications): Promise<any>;
+        markTutorialComplete(
+            tutorialsCompleted: POGOProtos.Enums.TutorialState[],
+            sendMarketingEmails: boolean,
+            sendPushNotifications: boolean
+        ): Promise<POGOProtos.Networking.Responses.MarkTutorialCompleteResponse>;
 
-        nicknamePokemon(pokemonID, nickname): Promise<any>;
+        nicknamePokemon(
+            pokemonID: string,
+            nickname: string
+        ): Promise<POGOProtos.Networking.Responses.NicknamePokemonResponse>;
 
-        playerUpdate(): Promise<any>;
+        playerUpdate(
+        ): Promise<POGOProtos.Networking.Responses.PlayerUpdateResponse>;
 
-        recycleInventoryItem(itemID, count): Promise<any>;
+        recycleInventoryItem(
+            itemID: POGOProtos.Inventory.Item.ItemId,
+            count: number
+        ): Promise<POGOProtos.Networking.Responses.RecycleInventoryItemResponse>;
 
-        releasePokemon(pokemonID): Promise<any>;
+        releasePokemon(
+            pokemonID: string
+        ): Promise<POGOProtos.Networking.Responses.ReleasePokemonResponse>;
 
-        setAvatar(skin, hair, shirt, pants, hat, shoes, gender, eyes, backpack): Promise<any>;
+        setAvatar(
+            skin: number,
+            hair: number,
+            shirt: number,
+            pants: number,
+            hat: number,
+            shoes: number,
+            gender: POGOProtos.Enums.Gender,
+            eyes: number,
+            backpack: number
+        ): Promise<POGOProtos.Networking.Responses.SetAvatarResponse>;
 
-        setContactSettings(sendMarketingEmails, sendPushNotifications): Promise<any>;
+        setContactSettings(
+            sendMarketingEmails: boolean,
+            sendPushNotifications: boolean
+        ): Promise<POGOProtos.Networking.Responses.SetContactSettingsResponse>;
 
-        setFavoritePokemon(pokemonID, isFavorite): Promise<any>;
+        setFavoritePokemon(
+            pokemonID: string,
+            isFavorite: boolean
+        ): Promise<POGOProtos.Networking.Responses.SetFavoritePokemonResponse>;
 
-        setPlayerTeam(teamColor): Promise<any>;
+        setPlayerTeam(
+            teamColor: POGOProtos.Enums.TeamColor
+        ): Promise<POGOProtos.Networking.Responses.SetPlayerTeamResponse>;
 
-        sfidaActionLog(): Promise<any>;
+        sfidaActionLog(
+        ): Promise<POGOProtos.Networking.Responses.SfidaActionLogResponse>;
 
-        startGymBattle(gymID, attackingPokemonIDs, defendingPokemonID): Promise<any>;
+        startGymBattle(
+            gymID: string,
+            attackingPokemonIDs: string[],
+            defendingPokemonID: string
+        ): Promise<POGOProtos.Networking.Responses.StartGymBattleResponse>;
 
-        upgradePokemon(pokemonID): Promise<any>;
+        upgradePokemon(
+            pokemonID: string
+        ): Promise<POGOProtos.Networking.Responses.UpgradePokemonResponse>;
 
-        useIncense(itemID): Promise<any>;
+        useIncense(
+            itemID: POGOProtos.Inventory.Item.ItemId
+        ): Promise<POGOProtos.Networking.Responses.UseIncenseResponse>;
 
-        useItemCapture(itemID, encounterID, spawnPointID): Promise<any>;
+        useItemCapture(
+            itemID: POGOProtos.Inventory.Item.ItemId,
+            encounterID: string,
+            spawnPointID: string
+        ): Promise<POGOProtos.Networking.Responses.UseItemCaptureResponse>;
 
-        useItemEggIncubator(itemID, pokemonID): Promise<any>;
+        useItemEggIncubator(
+            itemID: POGOProtos.Inventory.Item.ItemId,
+            pokemonID: string
+        ): Promise<POGOProtos.Networking.Responses.UseItemEggIncubatorResponse>;
 
-        useItemGym(itemID, gymID): Promise<any>;
+        useItemGym(
+            itemID: POGOProtos.Inventory.Item.ItemId,
+            gymID: string
+        ): Promise<POGOProtos.Networking.Responses.UseItemGymResponse>;
 
-        useItemPotion(itemID, pokemonID): Promise<any>;
+        useItemPotion(
+            itemID: POGOProtos.Inventory.Item.ItemId,
+            pokemonID: string
+        ): Promise<POGOProtos.Networking.Responses.UseItemPotionResponse>;
 
-        useItemRevive(itemID, pokemonID): Promise<any>;
+        useItemRevive(
+            itemID: POGOProtos.Inventory.Item.ItemId,
+            pokemonID: string
+        ): Promise<POGOProtos.Networking.Responses.UseItemReviveResponse>;
 
-        useItemXPBoost(itemID): Promise<any>;
+        useItemXPBoost(
+            itemID: POGOProtos.Inventory.Item.ItemId
+        ): Promise<POGOProtos.Networking.Responses.UseItemXpBoostResponse>;
     }
 
     /**
@@ -195,7 +346,7 @@ declare module 'pogobuf' {
          * @param {string} username
          * @param {string} password
          */
-        login(username: string, password: string): Promise<any>;
+        login(username: string, password: string): Promise<string>;
     }
 
     /**
@@ -207,7 +358,7 @@ declare module 'pogobuf' {
          * @param {string} username
          * @param {string} password
          */
-        login(username: string, password: string): Promise<any>;
+        login(username: string, password: string): Promise<string>;
 
         /**
          * Performs the Google login by skipping the password step and starting with the Master Token instead.
@@ -215,7 +366,7 @@ declare module 'pogobuf' {
          * @param {string} username
          * @param {string} token
          */
-        loginWithToken(username: string, token: string): Promise<any>;
+        loginWithToken(username: string, token: string): Promise<string>;
     }
 
     /**
@@ -273,13 +424,13 @@ declare module 'pogobuf' {
          * Takes a getInventory() response and separates it into pokemon, items, candies, player data, eggs, and pokedex.
          * @param {object} inventory API response message as returned by getInventory()
          */
-        function splitInventory(inventory: Object): Inventory;
+        function splitInventory(inventory: POGOProtos.Networking.Responses.GetInventoryResponse): Inventory;
 
         /**
          * Takes a downloadItemTemplates() response and separates it into the individual settings objects.
          * @param {object} templates API response message as returned by downloadItemTemplates()
          */
-        function splitItemTemplates(templates: Object): ItemTemplates;
+        function splitItemTemplates(templates: POGOProtos.Networking.Responses.DownloadItemTemplatesResponse): ItemTemplates;
 
         /**
          * Utility method that finds the name of the key for a given enum value and makes it look a little nicer.
