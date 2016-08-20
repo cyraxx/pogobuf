@@ -192,9 +192,7 @@ function Client() {
     this.getPlayer = function(appVersion) {
         return self.callOrChain({
             type: RequestType.GET_PLAYER,
-            message: new RequestMessages.GetPlayerMessage({
-                app_version: appVersion
-            }),
+            message: new RequestMessages.GetPlayerMessage({}),
             responseType: Responses.GetPlayerResponse
         });
     };
