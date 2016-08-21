@@ -189,12 +189,9 @@ function Client() {
         });
     };
 
-    this.getPlayer = function(appVersion) {
+    this.getPlayer = function() {
         return self.callOrChain({
             type: RequestType.GET_PLAYER,
-            message: new RequestMessages.GetPlayerMessage({
-                app_version: appVersion
-            }),
             responseType: Responses.GetPlayerResponse
         });
     };
@@ -446,7 +443,7 @@ function Client() {
         });
     };
 
-    this.getGymDetails = function(gymID, gymLatitude, gymLongitude) {
+    this.getGymDetails = function(gymID, gymLatitude, gymLongitude, clientVersion) {
         return self.callOrChain({
             type: RequestType.GET_GYM_DETAILS,
             message: new RequestMessages.GetGymDetailsMessage({
@@ -454,7 +451,8 @@ function Client() {
                 player_latitude: self.playerLatitude,
                 player_longitude: self.playerLongitude,
                 gym_latitude: gymLatitude,
-                gym_longitude: gymLongitude
+                gym_longitude: gymLongitude,
+                client_version: clientVersion
             }),
             responseType: Responses.GetGymDetailsResponse
         });
