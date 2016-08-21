@@ -11,6 +11,7 @@ declare module 'pogobuf' {
     export class Client {
         playerLatitude: number;
         playerLongitude: number;
+        playerAltitude: number;
 
         /**
          * Sets the authentication type and token (required before making API calls).
@@ -100,7 +101,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.AttackGymResponse>;
 
         catchPokemon(
-            encounterID: string,
+            encounterID: string | number | Long,
             pokeballItemID: POGOProtos.Inventory.Item.ItemId,
             normalizedReticleSize: number,
             spawnPointID: string,
@@ -127,7 +128,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.CollectDailyDefenderBonusResponse>;
 
         diskEncounter(
-            encounterID: string,
+            encounterID: string | number | Long,
             fortID: string
         ): Promise<POGOProtos.Networking.Responses.DiskEncounterResponse>;
 
@@ -150,7 +151,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.EchoResponse>;
 
         encounter(
-            encounterID: string,
+            encounterID: string | number | Long,
             spawnPointID: string
         ): Promise<POGOProtos.Networking.Responses.EncounterResponse>;
 
@@ -163,11 +164,12 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.EquipBadgeResponse>;
 
         evolvePokemon(
-            pokemonID: string): Promise<POGOProtos.Networking.Responses.EvolvePokemonResponse>;
+            pokemonID: string | number | Long
+        ): Promise<POGOProtos.Networking.Responses.EvolvePokemonResponse>;
 
         fortDeployPokemon(
             fortID: string,
-            pokemonID: string
+            pokemonID: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.FortDeployPokemonResponse>;
 
         fortDetails(
@@ -178,7 +180,7 @@ declare module 'pogobuf' {
 
         fortRecallPokemon(
             fortID: string,
-            pokemonID: string
+            pokemonID: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.FortRecallPokemonResponse>;
 
         fortSearch(
@@ -212,12 +214,12 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.GetIncensePokemonResponse>;
 
         getInventory(
-            lastTimestamp: string
+            lastTimestamp: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.GetInventoryResponse>;
 
         getMapObjects(
-            cellIDs: string[],
-            sinceTimestamps: any
+            cellIDs: string[] | number[] | Long[],
+            sinceTimestamps: string[] | number[] | Long[]
         ): Promise<POGOProtos.Networking.Responses.GetMapObjectsResponse>;
 
         getPlayer(
@@ -232,7 +234,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.GetSuggestedCodenamesResponse>;
 
         incenseEncounter(
-            encounterID: string,
+            encounterID: string | number | Long,
             encounterLocation: string
         ): Promise<POGOProtos.Networking.Responses.IncenseEncounterResponse>;
 
@@ -247,7 +249,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.MarkTutorialCompleteResponse>;
 
         nicknamePokemon(
-            pokemonID: string,
+            pokemonID: string | number | Long,
             nickname: string
         ): Promise<POGOProtos.Networking.Responses.NicknamePokemonResponse>;
 
@@ -260,7 +262,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.RecycleInventoryItemResponse>;
 
         releasePokemon(
-            pokemonID: string
+            pokemonID: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.ReleasePokemonResponse>;
 
         setAvatar(
@@ -281,7 +283,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.SetContactSettingsResponse>;
 
         setFavoritePokemon(
-            pokemonID: string,
+            pokemonID: string | number | Long,
             isFavorite: boolean
         ): Promise<POGOProtos.Networking.Responses.SetFavoritePokemonResponse>;
 
@@ -294,12 +296,12 @@ declare module 'pogobuf' {
 
         startGymBattle(
             gymID: string,
-            attackingPokemonIDs: string[],
-            defendingPokemonID: string
+            attackingPokemonIDs: string[] | number[] | Long[],
+            defendingPokemonID: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.StartGymBattleResponse>;
 
         upgradePokemon(
-            pokemonID: string
+            pokemonID: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.UpgradePokemonResponse>;
 
         useIncense(
@@ -308,13 +310,13 @@ declare module 'pogobuf' {
 
         useItemCapture(
             itemID: POGOProtos.Inventory.Item.ItemId,
-            encounterID: string,
+            encounterID: string | number | Long,
             spawnPointID: string
         ): Promise<POGOProtos.Networking.Responses.UseItemCaptureResponse>;
 
         useItemEggIncubator(
             itemID: POGOProtos.Inventory.Item.ItemId,
-            pokemonID: string
+            pokemonID: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.UseItemEggIncubatorResponse>;
 
         useItemGym(
@@ -324,12 +326,12 @@ declare module 'pogobuf' {
 
         useItemPotion(
             itemID: POGOProtos.Inventory.Item.ItemId,
-            pokemonID: string
+            pokemonID: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.UseItemPotionResponse>;
 
         useItemRevive(
             itemID: POGOProtos.Inventory.Item.ItemId,
-            pokemonID: string
+            pokemonID: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.UseItemReviveResponse>;
 
         useItemXPBoost(
