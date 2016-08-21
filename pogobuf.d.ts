@@ -377,41 +377,41 @@ declare module 'pogobuf' {
     export module Utils {
 
         interface Inventory {
-            pokemon: any[],
-            items: any[],
-            pokedex: any[],
-            player: any,
-            currency: any[],
-            camera: any,
-            inventory_upgrades: any[],
-            applied_items: any[],
-            egg_incubators: any[],
-            candies: any[]
+            pokemon: POGOProtos.Data.PokemonData[],
+            items: POGOProtos.Inventory.Item.ItemData[],
+            pokedex: POGOProtos.Data.PokedexEntry[],
+            player: POGOProtos.Data.Player.PlayerStats,
+            currency: POGOProtos.Data.Player.PlayerCurrency[],
+            camera: POGOProtos.Data.Player.PlayerCamera,
+            inventory_upgrades: POGOProtos.Inventory.InventoryUpgrades[],
+            applied_items: POGOProtos.Inventory.AppliedItems[],
+            egg_incubators: POGOProtos.Inventory.EggIncubators[],
+            candies: POGOProtos.Inventory.Candy[]
         }
 
         interface ItemTemplates {
-            pokemon_settings: any[],
-            item_settings: any[],
-            move_settings: any[],
-            move_sequence_settings: any[],
-            type_effective_settings: any[],
-            badge_settings: any[],
-            camera_settings: any,
-            player_level_settings: any,
-            gym_level_settings: any,
-            battle_settings: any,
-            encounter_settings: any,
-            iap_item_display: any[],
-            iap_settings: any,
-            pokemon_upgrade_settings: any,
-            equipped_badge_settings: any
+            pokemon_settings: POGOProtos.Settings.Master.PokemonSettings[],
+            item_settings: POGOProtos.Settings.Master.ItemSettings[],
+            move_settings: POGOProtos.Settings.Master.MoveSettings[],
+            move_sequence_settings: POGOProtos.Settings.Master.MoveSequenceSettings[],
+            type_effective_settings: POGOProtos.Settings.Master.TypeEffectiveSettings[],
+            badge_settings: POGOProtos.Settings.Master.BadgeSettings[],
+            camera_settings: POGOProtos.Settings.Master.CameraSettings,
+            player_level_settings: POGOProtos.Settings.Master.PlayerLevelSettings,
+            gym_level_settings: POGOProtos.Settings.Master.GymLevelSettings,
+            battle_settings: POGOProtos.Settings.Master.GymBattleSettings,
+            encounter_settings: POGOProtos.Settings.Master.EncounterSettings,
+            iap_item_display: POGOProtos.Settings.Master.IapItemDisplay[],
+            iap_settings: POGOProtos.Settings.Master.IapSettings,
+            pokemon_upgrade_settings: POGOProtos.Settings.Master.PokemonUpgradeSettings,
+            equipped_badge_settings: POGOProtos.Settings.Master.EquippedBadgeSettings
         }
 
         interface Stats {
-            attack: any,
-            defend: any,
-            stamina: any,
-            percent: any
+            attack: number,
+            defend: number,
+            stamina: number,
+            percent: number
         }
 
         /**
