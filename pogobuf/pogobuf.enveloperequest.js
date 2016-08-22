@@ -88,7 +88,7 @@ class EnvelopeRequest {
         return new Promise((resolve) => {
             let envelope = {
                 status_code: 2,
-                request_id: this.getRequestID(), // TODO: move to utils?
+                request_id: this.getRequestID(),
                 unknown12: 989
             };
 
@@ -96,21 +96,21 @@ class EnvelopeRequest {
             if (options.longitude) envelope.longitude = options.longitude;
             if (options.altitude) envelope.altitude = options.altitude;
 
-            if (this.client.authTicket) {
-                envelope.auth_ticket = this.client.authTicket;
-            } else if (!this.client.authType || !this.client.authToken) {
-                throw Error('No auth info provided');
-            } else {
+            if (options.authTicket) {
+                envelope.auth_ticket = options.authTicket;
+            } else if (options.authType && options.authToken) {
                 envelope.auth_info = {
-                    provider: this.client.authType,
+                    provider: options.authType,
                     token: {
-                        contents: this.client.authToken,
+                        contents: options.authToken,
                         unknown2: 59
                     }
                 };
+            } else {
+                throw Error('No auth info provided');
             }
 
-            if (this.requests.length) {
+            if (this.requests.length > 0) {
                 this.client.emit('request', {
                     request_id: envelope.request_id.toString(),
                     requests: this.requests.map(request => ({
@@ -127,8 +127,8 @@ class EnvelopeRequest {
             }
 
             this.client.emit('request-envelope', envelope);
-
             this.envelope = new POGOProtos.Networking.Envelopes.RequestEnvelope(envelope);
+
             resolve(this.envelope);
         });
     }
@@ -143,9 +143,9 @@ class EnvelopeRequest {
      */
     signEnvelope(options) {
         return new Promise((resolve, reject) => {
-            if (!options.auth_ticket) resolve(this.envelope);
+            if (!options.authTicket) resolve(this.envelope);
 
-            signatureBuilder.setAuthTicket(options.auth_ticket);
+            signatureBuilder.setAuthTicket(options.authTicket);
             signatureBuilder.setLocation(this.envelope.latitude, this.envelope.longitude, this.envelope.altitude);
             signatureBuilder.encrypt(this.envelope.requests, (err, sigEncrypted) => {
                 if (err) return reject(new Error(err));
@@ -195,61 +195,45 @@ class EnvelopeRequest {
     }
 
     /**
+     * Decode the response envelope with POGOProtos
+     * @param {buffer} envelope
+     * @return {Promise}
+     */
+    decodeEnvelope(envelope) {
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(envelope));
+            } catch (error) {
+                this.client.emit('parse-envelope-error', envelope, error);
+
+                if (error.decoded) {
+                    resolve(error.decoded);
+                } else {
+                    error.fatal = true;
+                    reject(error);
+                }
+            }
+        });
+    }
+
+    /**
      * Decode the response body from `send()`
      * @param {buffer} body - encoded ResponseEnvelope
      * @return {Promise} A Promise that will be resolved decoded response
      */
     decode(body) {
-        return new Promise((resolve, reject) => {
-            let envelope;
-            try {
-                envelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
-            } catch (error) {
-                this.client.emit('parse-envelope-error', body, error);
-                if (error.decoded) {
-                    envelope = error.decoded;
-                } else {
-                    error.fatal = true;
-                    return reject(error);
-                }
-            }
-
+        return this.decodeEnvelope(body).then(envelope => {
             this.client.emit('response-envelope', envelope);
 
             if (envelope.error) {
-                return reject(new RequestError(envelope.error, true));
+                throw new RequestError(envelope.error, true);
             }
 
-            if (envelope.auth_ticket) this.client.authTicket = envelope.auth_ticket;
+            let fatalStatusCodes = [3, 102],
+                successStatusCodes = [1, 2, 53],
+                responses = [];
 
-            if (this.client.endpoint === INITIAL_ENDPOINT) {
-                /* status_code 102 seems to be invalid auth token,
-                   could use later when caching token. */
-                if (envelope.status_code !== 53) {
-                    return reject(new RequestError(
-                        'Fetching RPC endpoint failed, received status code ' + envelope.status_code,
-                        false,
-                        envelope.status_code
-                    ));
-                }
-
-                if (!envelope.api_url) {
-                    return reject(new RequestError('Fetching RPC endpoint failed, none supplied in response', true));
-                }
-
-                this.client.endpoint = 'https://' + envelope.api_url + '/rpc';
-
-                this.client.emit('endpoint-response', {
-                    status_code: envelope.status_code,
-                    request_id: envelope.request_id.toString(),
-                    api_url: envelope.api_url
-                });
-
-                // return reject(new RequestError('RPC responded with 53 redirect', true, 53));
-            }
-
-            /* These codes indicate invalid input, no use in retrying so throw StopError */
-            if (envelope.status_code === 3 || envelope.status_code === 102) {
+            if (~fatalStatusCodes.indexOf(envelope.status_code)) {
                 throw new RequestError(
                     `Status code ${envelope.status_code} received from RPC`,
                     true,
@@ -257,48 +241,42 @@ class EnvelopeRequest {
                 );
             }
 
-            /* These can be temporary so throw regular Error */
-            if (!~[1, 2, 53].indexOf(envelope.status_code)) {
-                return reject(new RequestError(
+            if (!~successStatusCodes.indexOf(envelope.status_code)) {
+                throw new RequestError(
                     `Status code ${envelope.status_code} received from RPC`,
                     false,
                     envelope.status_code
-                ));
+                );
             }
-
-            let responses = [];
 
             if (this.requests && envelope.status_code !== 53) {
                 if (this.requests.length !== envelope.returns.length) {
-                    return reject(new RequestError('Request count does not match response count'));
+                    throw new RequestError('Request count does not match response count');
                 }
 
-                for (let i = 0; i < envelope.returns.length; i++) {
-                    if (!this.requests[i].responseType) continue;
+                this.requests.forEach((request, i) => {
+                    if (!request.responseType) return;
 
-                    let responseMessage;
                     try {
-                        responseMessage = this.requests[i].responseType.decode(envelope.returns[i]);
+                        responses.push(request.responseType.decode(envelope.returns[i]));
                     } catch (err) {
                         this.client.emit('parse-response-error', envelope.returns[i].toBuffer(), err);
-                        return reject(new RequestError(err));
+                        throw new RequestError(err);
                     }
-
-                    responses.push(responseMessage);
-                }
+                });
             }
 
             this.client.emit('response', {
                 status_code: envelope.status_code,
                 request_id: envelope.request_id.toString(),
-                responses: responses.map((request, h) => ({
-                    name: Utils.getEnumKeyByValue(RequestType, this.requests[h].type),
-                    type: this.requests[h].type,
+                responses: responses.map((request, i) => ({
+                    name: Utils.getEnumKeyByValue(RequestType, this.requests[i].type),
+                    type: this.requests[i].type,
                     data: request
                 }))
             });
 
-            return resolve([responses, envelope]);
+            return [responses, envelope];
         });
     }
 }

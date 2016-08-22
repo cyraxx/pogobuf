@@ -28,6 +28,7 @@ class Client extends EventEmitter {
 
     constructor() {
         super();
+        this.authTicket = null;
     }
 
     /**
@@ -118,10 +119,14 @@ class Client extends EventEmitter {
         return envelopeRequest.buildEnvelope({
             latitude: this.playerLatitude,
             longitude: this.playerLongitude,
-            altitude: this.playerAltitude
+            altitude: this.playerAltitude,
+            authTicket: this.authTicket,
+            // Required for logging in
+            authType: this.authType,
+            authToken: this.authToken
         }).then(() => {
             return envelopeRequest.signEnvelope({
-                auth_ticket: this.auth_ticket
+                authTicket: this.authTicket
             });
         }).then(() => {
             envelopeRequest.try++;
@@ -132,12 +137,19 @@ class Client extends EventEmitter {
         }).then(body => {
             return envelopeRequest.decode(body);
         }).spread((responses, envelope) => {
-            // Handle redirect
+            // Handle login redirect
             if (envelope.status_code === 53) {
-                this.auth_ticket = envelope.auth_ticket;
+                this.emit('endpoint-response', {
+                    status_code: envelope.status_code,
+                    request_id: envelope.request_id.toString(),
+                    api_url: envelope.api_url
+                });
+
+                this.authTicket = envelope.auth_ticket;
                 this.endpoint = `https://${envelope.api_url}/rpc`;
                 return this.sendEnvelopeRequest(envelopeRequest);
             }
+
             // Do required stuff with result
             return responses.length === 1 ? responses[0] : responses;
         }).catch(reason => {
