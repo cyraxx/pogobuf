@@ -1018,7 +1018,8 @@ function Client() {
                     }
 
                     /* These codes indicate invalid input, no use in retrying so throw StopError */
-                    if (responseEnvelope.status_code === 3 || responseEnvelope.status_code >= 100) {
+                    if (responseEnvelope.status_code === 3 || responseEnvelope.status_code === 51 ||
+                        responseEnvelope.status_code >= 100) {
                         reject(new retry.StopError(
                             `Status code ${responseEnvelope.status_code} received from RPC`));
                     }
