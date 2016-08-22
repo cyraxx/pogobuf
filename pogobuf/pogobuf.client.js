@@ -1,6 +1,7 @@
 'use strict';
 
 const
+    Promise = require('bluebird'),
     EventEmitter = require('events').EventEmitter,
     methods = require('./pogobuf.methods.js'),
     EnvelopeRequest = require('./pogobuf.enveloperequest.js');
@@ -88,7 +89,7 @@ class Client extends EventEmitter {
             new API endpoint by callRPC().
         */
         return this.batch()
-            .getPlayer(this.options.appVersion)
+            .getPlayer()
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()

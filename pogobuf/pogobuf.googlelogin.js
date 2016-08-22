@@ -1,7 +1,9 @@
 'use strict';
 
-const GoogleOAuth = require('gpsoauthnode');
-const google = new GoogleOAuth();
+const
+    Promise = require('bluebird'),
+    GoogleOAuth = require('gpsoauthnode'),
+    google = new GoogleOAuth();
 
 /**
  * Google login client.

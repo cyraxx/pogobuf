@@ -1,6 +1,8 @@
 'use strict';
 
-const request = require('request'),
+const
+    Promise = require('bluebird'),
+    request = require('request'),
     querystring = require('querystring'),
     url = require('url');
 
