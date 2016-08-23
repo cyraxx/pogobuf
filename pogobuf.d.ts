@@ -144,7 +144,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.DownloadRemoteConfigVersionResponse>;
 
         downloadSettings(
-            hash: string
+            hash?: string
         ): Promise<POGOProtos.Networking.Responses.DownloadSettingsResponse>;
 
         echo(
@@ -214,7 +214,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.GetIncensePokemonResponse>;
 
         getInventory(
-            lastTimestamp: string | number | Long
+            lastTimestamp?: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.GetInventoryResponse>;
 
         getMapObjects(
