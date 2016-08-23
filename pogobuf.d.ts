@@ -204,7 +204,8 @@ declare module 'pogobuf' {
         getGymDetails(
             gymID: string,
             gymLatitude: number,
-            gymLongitude: number
+            gymLongitude: number,
+            clientVersion: string
         ): Promise<POGOProtos.Networking.Responses.GetGymDetailsResponse>;
 
         getHatchedEggs(
