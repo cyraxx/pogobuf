@@ -223,7 +223,6 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.GetMapObjectsResponse>;
 
         getPlayer(
-            appVersion: string
         ): Promise<POGOProtos.Networking.Responses.GetPlayerResponse>;
 
         getPlayerProfile(
