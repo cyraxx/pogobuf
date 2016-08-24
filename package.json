@@ -3,6 +3,7 @@
   "version": "1.6.0",
   "description": "Pokémon Go Client Library",
   "main": "pogobuf/pogobuf.js",
+  "typings": "./pogobuf.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
