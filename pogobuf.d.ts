@@ -144,7 +144,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.DownloadRemoteConfigVersionResponse>;
 
         downloadSettings(
-            hash: string
+            hash?: string
         ): Promise<POGOProtos.Networking.Responses.DownloadSettingsResponse>;
 
         echo(
@@ -204,7 +204,8 @@ declare module 'pogobuf' {
         getGymDetails(
             gymID: string,
             gymLatitude: number,
-            gymLongitude: number
+            gymLongitude: number,
+            clientVersion: string
         ): Promise<POGOProtos.Networking.Responses.GetGymDetailsResponse>;
 
         getHatchedEggs(
@@ -214,7 +215,7 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.GetIncensePokemonResponse>;
 
         getInventory(
-            lastTimestamp: string | number | Long
+            lastTimestamp?: string | number | Long
         ): Promise<POGOProtos.Networking.Responses.GetInventoryResponse>;
 
         getMapObjects(
@@ -223,7 +224,6 @@ declare module 'pogobuf' {
         ): Promise<POGOProtos.Networking.Responses.GetMapObjectsResponse>;
 
         getPlayer(
-            appVersion: string
         ): Promise<POGOProtos.Networking.Responses.GetPlayerResponse>;
 
         getPlayerProfile(
