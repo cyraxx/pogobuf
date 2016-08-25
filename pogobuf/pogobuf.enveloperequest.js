@@ -150,12 +150,12 @@ class EnvelopeRequest {
             signatureBuilder.encrypt(this.envelope.requests, (err, sigEncrypted) => {
                 if (err) return reject(new Error(err));
 
-                this.envelope.unknown6.push(new POGOProtos.Networking.Envelopes.Unknown6({
+                this.envelope.unknown6 = new POGOProtos.Networking.Envelopes.Unknown6({
                     request_type: 6,
                     unknown2: new POGOProtos.Networking.Envelopes.Unknown6.Unknown2({
                         encrypted_signature: sigEncrypted
                     })
-                }));
+                });
 
                 return resolve(this.envelope);
             });

@@ -28,15 +28,11 @@ module.exports = {
 
     /**
      * getPlayer: get player data
-     * @param {string} appVersion - current app version eg. "0.31.1"
      * @returns {object} POGO request object
      */
-    getPlayer(appVersion) {
+    getPlayer() {
         return {
             type: RequestType.GET_PLAYER,
-            message: new RequestMessages.GetPlayerMessage({
-                app_version: appVersion
-            }),
             responseType: Responses.GetPlayerResponse
         };
     },
@@ -411,7 +407,7 @@ module.exports = {
         };
     },
 
-    getGymDetails(gymID, gymLatitude, gymLongitude) {
+    getGymDetails(gymID, gymLatitude, gymLongitude, clientVersion) {
         return {
             type: RequestType.GET_GYM_DETAILS,
             message: new RequestMessages.GetGymDetailsMessage({
@@ -419,7 +415,8 @@ module.exports = {
                 player_latitude: this.playerLatitude,
                 player_longitude: this.playerLongitude,
                 gym_latitude: gymLatitude,
-                gym_longitude: gymLongitude
+                gym_longitude: gymLongitude,
+                client_version: clientVersion
             }),
             responseType: Responses.GetGymDetailsResponse
         };
