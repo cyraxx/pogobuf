@@ -1,9 +1,9 @@
-/// <reference path="../node-pogo-protos/pogo-protos.d.ts" />
+import * as POGOProtos from 'node-pogo-protos';
 
 /**
  * Pogobuf typings created with <3 by hands.
  */
-declare module 'pogobuf' {
+declare namespace pogobuf {
 
     /**
      * Pokémon Go RPC client.
@@ -455,3 +455,5 @@ declare module 'pogobuf' {
         function convertLongs(object: Object): Object;
     }
 }
+
+export = pogobuf;
