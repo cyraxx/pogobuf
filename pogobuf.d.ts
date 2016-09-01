@@ -11,7 +11,7 @@ declare namespace pogobuf {
     export class Client {
         playerLatitude: number;
         playerLongitude: number;
-        playerAltitude: number;
+        playerLocationAccuracy: number;
 
         /**
          * Sets the authentication type and token (required before making API calls).
@@ -27,9 +27,9 @@ declare namespace pogobuf {
          * To update the location on the server you probably want to call playerUpdate().
          * @param {number} latitude The player's latitude
          * @param {number} longitude The player's longitude
-         * @param {number} altitude The player's altitude (optional) (default value is 0)
+         * @param {number} accuracy The location accuracy in m (optional) (default value is 0)
          */
-        setPosition(latitude: number, longitude: number, altitude?: number): void;
+        setPosition(latitude: number, longitude: number, accuracy?: number): void;
 
         /**
          * Performs the initial API call.
@@ -112,6 +112,10 @@ declare namespace pogobuf {
 
         checkAwardedBadges(
         ): Promise<POGOProtos.Networking.Responses.CheckAwardedBadgesResponse>;
+
+        checkChallenge(
+            isDebugRequest: boolean
+        ): Promise<POGOProtos.Networking.Responses.CheckChallengeResponse>;
 
         checkCodenameAvailable(
             codename: string
@@ -197,6 +201,9 @@ declare namespace pogobuf {
             appVersion: string
         ): Promise<POGOProtos.Networking.Responses.GetAssetDigestResponse>;
 
+        getBuddyWalked(
+        ): Promise<POGOProtos.Networking.Responses.GetBuddyWalkedResponse>;
+
         getDownloadURLs(
             assetIDs: string[]
         ): Promise<POGOProtos.Networking.Responses.GetDownloadUrlsResponse>;
@@ -277,6 +284,10 @@ declare namespace pogobuf {
             backpack: number
         ): Promise<POGOProtos.Networking.Responses.SetAvatarResponse>;
 
+        setBuddyPokemon(
+            pokemonID: string | number | Long
+        ): Promise<POGOProtos.Networking.Responses.SetBuddyPokemonResponse>;
+
         setContactSettings(
             sendMarketingEmails: boolean,
             sendPushNotifications: boolean
@@ -337,6 +348,10 @@ declare namespace pogobuf {
         useItemXPBoost(
             itemID: POGOProtos.Inventory.Item.ItemId
         ): Promise<POGOProtos.Networking.Responses.UseItemXpBoostResponse>;
+
+        verifyChallenge(
+            token: string
+        ): Promise<POGOProtos.Networking.Responses.VerifyChallengeResponse>;
     }
 
     /**

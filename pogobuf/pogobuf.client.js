@@ -49,12 +49,12 @@ function Client() {
      * probably want to call {@link #updatePlayer}.
      * @param {number} latitude - The player's latitude
      * @param {number} longitude - The player's longitude
-     * @param {number} [altitude=0] - The player's altitude
+     * @param {number} [accuracy=0] - The location accuracy in m
      */
-    this.setPosition = function(latitude, longitude, altitude) {
+    this.setPosition = function(latitude, longitude, accuracy) {
         self.playerLatitude = latitude;
         self.playerLongitude = longitude;
-        self.playerAltitude = altitude || 0;
+        self.playerLocationAccuracy = accuracy || 0;
     };
 
     /**
@@ -645,6 +645,23 @@ function Client() {
         });
     };
 
+    this.setBuddyPokemon = function(pokemonID) {
+        return self.callOrChain({
+            type: RequestType.SET_BUDDY_POKEMON,
+            message: new RequestMessages.SetBuddyPokemonMessage({
+                pokemon_id: pokemonID
+            }),
+            responseType: Responses.SetBuddyPokemonResponse
+        });
+    };
+
+    this.getBuddyWalked = function() {
+        return self.callOrChain({
+            type: RequestType.GET_BUDDY_WALKED,
+            responseType: Responses.GetBuddyWalkedResponse
+        });
+    };
+
     this.getAssetDigest = function(platform, deviceManufacturer, deviceModel, locale, appVersion) {
         return self.callOrChain({
             type: RequestType.GET_ASSET_DIGEST,
@@ -738,6 +755,26 @@ function Client() {
         });
     };
 
+    this.checkChallenge = function(isDebugRequest) {
+        return self.callOrChain({
+            type: RequestType.CHECK_CHALLENGE,
+            message: new RequestMessages.CheckChallengeMessage({
+                debug_request: isDebugRequest
+            }),
+            responseType: Responses.CheckChallengeResponse
+        });
+    };
+
+    this.verifyChallenge = function(token) {
+        return self.callOrChain({
+            type: RequestType.VERIFY_CHALLENGE,
+            message: new RequestMessages.VerifyChallengeMessage({
+                token: token
+            }),
+            responseType: Responses.VerifyChallengeResponse
+        });
+    };
+
     this.echo = function() {
         return self.callOrChain({
             type: RequestType.ECHO,
@@ -810,12 +847,12 @@ function Client() {
         var envelopeData = {
             status_code: 2,
             request_id: self.getRequestID(),
-            unknown12: 989
+            ms_since_last_locationfix: 100 + Math.floor(Math.random() * 900)
         };
 
         if (self.playerLatitude) envelopeData.latitude = self.playerLatitude;
         if (self.playerLongitude) envelopeData.longitude = self.playerLongitude;
-        if (self.playerAltitude) envelopeData.altitude = self.playerAltitude;
+        if (self.playerLocationAccuracy) envelopeData.accuracy = self.playerLocationAccuracy;
 
         if (self.authTicket) {
             envelopeData.auth_ticket = self.authTicket;
@@ -884,7 +921,7 @@ function Client() {
             }
 
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
-            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.altitude);
+            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
                 if (err) {
@@ -892,12 +929,12 @@ function Client() {
                     return;
                 }
 
-                envelope.unknown6 = new POGOProtos.Networking.Envelopes.Unknown6({
-                    request_type: 6,
-                    unknown2: new POGOProtos.Networking.Envelopes.Unknown6.Unknown2({
+                envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
+                    type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
+                    request_message: new POGOProtos.Networking.Platform.Requests.SendEncryptedSignatureRequest({
                         encrypted_signature: sigEncrypted
-                    })
-                });
+                    }).encode()
+                }));
 
                 resolve(envelope);
             });
