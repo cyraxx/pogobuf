@@ -15,7 +15,7 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
-const DEFAULT_MAP_OBJECTS_DELAY = 5;
+const DEFAULT_MAP_OBJECTS_DELAY = 30;
 const DEFAULT_MAP_OBJECTS_DISTANCE = 10;
 const DEFAULT_FORT_INTERACTION_RANGE = 40;
 const DEFAULT_FORT_INTERACTION_RANGE_FAR = 1000;
