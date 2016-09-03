@@ -826,7 +826,7 @@ function Client() {
 
     this.maxTries = 5;
     this.mapObjectsThrottlingEnabled = true;
-    this.mapObjectsMinDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
+    this.mapObjectsMaxDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
     this.mapObjectsMinDistance = DEFAULT_MAP_OBJECTS_DISTANCE;
     this.interactionThrottlingEnabled = true;
     this.fortInteractionRange = DEFAULT_FORT_INTERACTION_RANGE;
@@ -986,7 +986,7 @@ function Client() {
                 self.lastMapObjectsLongitude,
                 self.mapObjectsMinDistance);
             var now = new Date().getTime(),
-                delayNeeded = self.lastMapObjectsCall + self.mapObjectsMinDelay - now;
+                delayNeeded = self.lastMapObjectsCall + self.mapObjectsMaxDelay - now;
 
             if (delayNeeded > 0 && self.mapObjectsThrottlingEnabled && !refreshRequired) {
                 return Promise.delay(delayNeeded).then(() => self.callRPC(requests, envelope));
@@ -1189,8 +1189,8 @@ function Client() {
         if (settingsResponse && !settingsResponse.error && settingsResponse.settings) {
             var settings = settingsResponse.settings;
             if (settings.map_settings) {
-                self.mapObjectsMinDelay =
-                    settings.map_settings.get_map_objects_min_refresh_seconds * 1000;
+                self.mapObjectsMaxDelay =
+                    settings.map_settings.get_map_objects_max_refresh_seconds * 1000;
                 self.mapObjectsMinDistance =
                     settings.map_settings.get_map_objects_min_distance_meters;
             }
