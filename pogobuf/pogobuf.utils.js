@@ -249,10 +249,10 @@ module.exports = {
 
     /**
      * Utility method to get the distance in meters between two locations
-     * @param {number} lat1 - origin latitude
-     * @param {number} lng1 - origin longitude
-     * @param {number} lat2 - destination latitude
-     * @param {number} lng2 - destination longitude
+     * @param {number} lat1 - first latitude
+     * @param {number} lng1 - first longitude
+     * @param {number} lat2 - second latitude
+     * @param {number} lng2 - second longitude
      * @returns {object}
      * @static
      */
