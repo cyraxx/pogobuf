@@ -143,16 +143,6 @@ function Client() {
     };
 
     /**
-     * Enables or disables the built-in throttling of interaction calls (forts, encounters)
-     * based on the settings received from the server. Enabled by default, disable if you
-     * want to manage your own throttling.
-     * @param {boolean} enable
-     */
-    this.setInteractionThrottlingEnabled = function(enable) {
-        self.interactionThrottlingEnabled = enable;
-    };
-
-    /**
      * Sets a callback to be called for any envelope or request just before it is sent to
      * the server (mostly for debugging purposes).
      * @deprecated Use the raw-request event instead
@@ -246,11 +236,6 @@ function Client() {
     };
 
     this.fortSearch = function(fortID, fortLatitude, fortLongitude) {
-        // Check interaction range limits
-        if (self.interactionThrottlingEnabled &&
-            !self.withinInteractionRange(fortLatitude, fortLongitude, self.fortInteractionRange)) {
-            return self.batchRequests ? self : false;
-        }
         return self.callOrChain({
             type: RequestType.FORT_SEARCH,
             message: new RequestMessages.FortSearchMessage({
@@ -295,11 +280,6 @@ function Client() {
     };
 
     this.fortDetails = function(fortID, fortLatitude, fortLongitude) {
-        // Check interaction range limits
-        if (self.interactionThrottlingEnabled &&
-            !self.withinInteractionRange(fortLatitude, fortLongitude, self.fortInteractionRangeFar)) {
-            return self.batchRequests ? self : false;
-        }
         return self.callOrChain({
             type: RequestType.FORT_DETAILS,
             message: new RequestMessages.FortDetailsMessage({
@@ -824,9 +804,6 @@ function Client() {
     this.mapObjectsThrottlingEnabled = true;
     this.mapObjectsMaxDelay = 30 * 1000;
     this.mapObjectsMinDistance = 10;
-    this.interactionThrottlingEnabled = true;
-    this.fortInteractionRange = 40;
-    this.fortInteractionRangeFar = 1000;
     this.automaticLongConversionEnabled = true;
 
     /**
@@ -1189,10 +1166,6 @@ function Client() {
                     settings.map_settings.get_map_objects_max_refresh_seconds * 1000;
                 self.mapObjectsMinDistance =
                     settings.map_settings.get_map_objects_min_distance_meters;
-            }
-            if (settings.fort_settings) {
-                self.fortInteractionRange = settings.fort_settings.interaction_range_meters;
-                self.fortInteractionRangeFar = settings.fort_settings.far_interaction_range_meters;
             }
         }
         return responses;
