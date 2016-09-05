@@ -14,6 +14,8 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
 
+const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
+
 /**
  * Pokémon Go RPC client.
  * @class Client
@@ -818,19 +820,13 @@ function Client() {
         encoding: null
     });
 
-    const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
-    const DEFAULT_MAP_OBJECTS_DELAY = 30;
-    const DEFAULT_MAP_OBJECTS_DISTANCE = 10;
-    const DEFAULT_FORT_INTERACTION_RANGE = 40;
-    const DEFAULT_FORT_INTERACTION_RANGE_FAR = 1000;
-
     this.maxTries = 5;
     this.mapObjectsThrottlingEnabled = true;
-    this.mapObjectsMaxDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
-    this.mapObjectsMinDistance = DEFAULT_MAP_OBJECTS_DISTANCE;
+    this.mapObjectsMaxDelay = 30 * 1000;
+    this.mapObjectsMinDistance = 10;
     this.interactionThrottlingEnabled = true;
-    this.fortInteractionRange = DEFAULT_FORT_INTERACTION_RANGE;
-    this.fortInteractionRangeFar = DEFAULT_FORT_INTERACTION_RANGE_FAR;
+    this.fortInteractionRange = 40;
+    this.fortInteractionRangeFar = 1000;
     this.automaticLongConversionEnabled = true;
 
     /**
