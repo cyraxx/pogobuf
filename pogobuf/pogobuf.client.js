@@ -48,12 +48,12 @@ class Client extends EventEmitter {
      * probably want to call {@link #updatePlayer}.
      * @param {number} latitude - The player's latitude
      * @param {number} longitude - The player's longitude
-     * @param {number} [altitude=0] - The player's altitude
+     * @param {number} [accuracy=0] - The location accuracy in m
      */
-    setPosition(latitude, longitude, altitude = 0) {
+    setPosition(latitude, longitude, accuracy = 0) {
         this.playerLatitude = latitude;
         this.playerLongitude = longitude;
-        this.playerAltitude = altitude;
+        this.playerLocationAccuracy = accuracy;
     }
 
     /**
@@ -119,7 +119,7 @@ class Client extends EventEmitter {
         return envelopeRequest.buildEnvelope({
             latitude: this.playerLatitude,
             longitude: this.playerLongitude,
-            altitude: this.playerAltitude,
+            accuracy: this.playerLocationAccuracy,
             authTicket: this.authTicket,
             // Required for logging in
             authType: this.authType,
@@ -213,8 +213,8 @@ class Client extends EventEmitter {
                 settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
             ) {
                 this.setOption(
-                  'mapObjectsMinDelay',
-                  settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
+                    'mapObjectsMinDelay',
+                    settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
                 );
             }
         }

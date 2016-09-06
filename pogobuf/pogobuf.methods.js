@@ -39,12 +39,12 @@ module.exports = {
 
 
     /**
-    * getInventory: get the players inventory: bag, pokemon, eggs, pokedex,
-    * upgrades, used items, currency and candies.
-    * Util method `pogobuf.Utils.splitInventory` can be used on the result
-    * @param {number} lastTimestamp - unknown, the app seems to always give 0
-    * @returns {object} POGO request object
-    */
+     * getInventory: get the players inventory: bag, pokemon, eggs, pokedex,
+     * upgrades, used items, currency and candies.
+     * Util method `pogobuf.Utils.splitInventory` can be used on the result
+     * @param {number} lastTimestamp - unknown, the app seems to always give 0
+     * @returns {object} POGO request object
+     */
     getInventory(lastTimestamp) {
         return {
             type: RequestType.GET_INVENTORY,
@@ -55,11 +55,11 @@ module.exports = {
         };
     },
 
-   /**
-    * downloadSettings: download the current app settings
-    * @param {string} hash
-    * @returns {object} POGO request object
-    */
+    /**
+     * downloadSettings: download the current app settings
+     * @param {string} hash
+     * @returns {object} POGO request object
+     */
     downloadSettings(hash) {
         return {
             type: RequestType.DOWNLOAD_SETTINGS,
@@ -70,10 +70,10 @@ module.exports = {
         };
     },
 
-   /**
-    * downloadItemTemplates
-    * @returns {object} POGO request object
-    */
+    /**
+     * downloadItemTemplates
+     * @returns {object} POGO request object
+     */
     downloadItemTemplates() {
         return {
             type: RequestType.DOWNLOAD_ITEM_TEMPLATES,
@@ -81,15 +81,15 @@ module.exports = {
         };
     },
 
-   /**
-    * downloadRemoteConfigVersion
-    * @param {string} platform
-    * @param {string} deviceManufacturer
-    * @param {string} deviceModel
-    * @param {string} locale
-    * @param {string} appVersion
-    * @returns {object} POGO request object
-    */
+    /**
+     * downloadRemoteConfigVersion
+     * @param {string} platform
+     * @param {string} deviceManufacturer
+     * @param {string} deviceModel
+     * @param {string} locale
+     * @param {string} appVersion
+     * @returns {object} POGO request object
+     */
     downloadRemoteConfigVersion(platform, deviceManufacturer, deviceModel, locale, appVersion) {
         return {
             type: RequestType.DOWNLOAD_REMOTE_CONFIG_VERSION,
@@ -104,13 +104,13 @@ module.exports = {
         };
     },
 
-   /**
-    * fortSearch: Spin a fort for rewards, does not work on gyms
-    * @param {string} fortID
-    * @param {string} fortLatitude
-    * @param {string} fortLongitude
-    * @returns {object} POGO request object
-    */
+    /**
+     * fortSearch: Spin a fort for rewards, does not work on gyms
+     * @param {string} fortID
+     * @param {string} fortLatitude
+     * @param {string} fortLongitude
+     * @returns {object} POGO request object
+     */
     fortSearch(fortID, fortLatitude, fortLongitude) {
         return {
             type: RequestType.FORT_SEARCH,
@@ -125,12 +125,12 @@ module.exports = {
         };
     },
 
-   /**
-    * encounter: Start a enncounter with specified nearby pokemon
-    * @param {string} encounterID
-    * @param {string} spawnPointID
-    * @returns {object} POGO request object
-    */
+    /**
+     * encounter: Start a enncounter with specified nearby pokemon
+     * @param {string} encounterID
+     * @param {string} spawnPointID
+     * @returns {object} POGO request object
+     */
     encounter(encounterID, spawnPointID) {
         return {
             type: RequestType.ENCOUNTER,
@@ -144,19 +144,19 @@ module.exports = {
         };
     },
 
-   /**
-    * catchPokemon: throw a pokeball during a encounter
-    * @param {number} encounterID - encounter_id from the encounter
-    * @param {number} pokeballItemID - Which pokeball 1 = normal, 2 = great, 3 = ultra
-    * @param {string} normalizedReticleSize - Current size of the circle. eg. 1.950 for very small
-    * @param {number} spawnPointID - spawn_point_id from the encounter
-    * @param {bool} hitPokemon - Did the pokeball hit the pokemon
-    * @param {string} spinModifier - Curve ratio, eg. curve bonus: 0.850
-    * @param {string} normalizedHitPosition - Where the pokeball hit the pokemon. 1.0 is center
-    * @returns {object} POGO request object
-    */
+    /**
+     * catchPokemon: throw a pokeball during a encounter
+     * @param {number} encounterID - encounter_id from the encounter
+     * @param {number} pokeballItemID - Which pokeball 1 = normal, 2 = great, 3 = ultra
+     * @param {string} normalizedReticleSize - Current size of the circle. eg. 1.950 for very small
+     * @param {number} spawnPointID - spawn_point_id from the encounter
+     * @param {bool} hitPokemon - Did the pokeball hit the pokemon
+     * @param {string} spinModifier - Curve ratio, eg. curve bonus: 0.850
+     * @param {string} normalizedHitPosition - Where the pokeball hit the pokemon. 1.0 is center
+     * @returns {object} POGO request object
+     */
     catchPokemon(encounterID, pokeballItemID, normalizedReticleSize, spawnPointID, hitPokemon,
-       spinModifier, normalizedHitPosition) {
+        spinModifier, normalizedHitPosition) {
         return {
             type: RequestType.CATCH_POKEMON,
             message: new RequestMessages.CatchPokemonMessage({
@@ -172,13 +172,13 @@ module.exports = {
         };
     },
 
-   /**
-    * fortDetails: look up fort details
-    * @param {number} fortID
-    * @param {number} fortLatitude
-    * @param {number} fortLongitude
-    * @returns {object} POGO request object
-    */
+    /**
+     * fortDetails: look up fort details
+     * @param {number} fortID
+     * @param {number} fortLatitude
+     * @param {number} fortLongitude
+     * @returns {object} POGO request object
+     */
     fortDetails(fortID, fortLatitude, fortLongitude) {
         return {
             type: RequestType.FORT_DETAILS,
@@ -191,12 +191,12 @@ module.exports = {
         };
     },
 
-   /**
-    * getMapObjects: Load map data like forts and pokemon
-    * @param {array} cellIDs - S2 geo cell IDs of which you want map data
-    * @param {array} sinceTimestamps - Array of timestamps with same length of cellIDs
-    * @returns {object} POGO request object
-    */
+    /**
+     * getMapObjects: Load map data like forts and pokemon
+     * @param {array} cellIDs - S2 geo cell IDs of which you want map data
+     * @param {array} sinceTimestamps - Array of timestamps with same length of cellIDs
+     * @returns {object} POGO request object
+     */
     getMapObjects(cellIDs, sinceTimestamps) {
         return {
             type: RequestType.GET_MAP_OBJECTS,
@@ -210,12 +210,12 @@ module.exports = {
         };
     },
 
-   /**
-    * fortDeployPokemon
-    * @param {number} fortID
-    * @param {number} pokemonID
-    * @returns {object} POGO request object
-    */
+    /**
+     * fortDeployPokemon
+     * @param {number} fortID
+     * @param {number} pokemonID
+     * @returns {object} POGO request object
+     */
     fortDeployPokemon(fortID, pokemonID) {
         return {
             type: RequestType.FORT_DEPLOY_POKEMON,
@@ -229,12 +229,12 @@ module.exports = {
         };
     },
 
-   /**
-    * fortRecallPokemon
-    * @param {number} fortID
-    * @param {number} pokemonID
-    * @returns {object} POGO request object
-    */
+    /**
+     * fortRecallPokemon
+     * @param {number} fortID
+     * @param {number} pokemonID
+     * @returns {object} POGO request object
+     */
     fortRecallPokemon(fortID, pokemonID) {
         return {
             type: RequestType.FORT_RECALL_POKEMON,
@@ -248,11 +248,11 @@ module.exports = {
         };
     },
 
-   /**
-    * releasePokemon: known as "transfer", receive 1 candy for releasing
-    * @param {number} pokemonID
-    * @returns {object} POGO request object
-    */
+    /**
+     * releasePokemon: known as "transfer", receive 1 candy for releasing
+     * @param {number} pokemonID
+     * @returns {object} POGO request object
+     */
     releasePokemon(pokemonID) {
         return {
             type: RequestType.RELEASE_POKEMON,
@@ -263,12 +263,12 @@ module.exports = {
         };
     },
 
-   /**
-    * useItemPotion
-    * @param {number} itemID
-    * @param {number} pokemonID
-    * @returns {object} POGO request object
-    */
+    /**
+     * useItemPotion
+     * @param {number} itemID
+     * @param {number} pokemonID
+     * @returns {object} POGO request object
+     */
     useItemPotion(itemID, pokemonID) {
         return {
             type: RequestType.USE_ITEM_POTION,
@@ -280,13 +280,13 @@ module.exports = {
         };
     },
 
-   /**
-    * useItemCapture
-    * @param {number} itemID
-    * @param {number} encounterID
-    * @param {number} spawnPointID
-    * @returns {object} POGO request object
-    */
+    /**
+     * useItemCapture
+     * @param {number} itemID
+     * @param {number} encounterID
+     * @param {number} spawnPointID
+     * @returns {object} POGO request object
+     */
     useItemCapture(itemID, encounterID, spawnPointID) {
         return {
             type: RequestType.USE_ITEM_CAPTURE,
@@ -299,12 +299,12 @@ module.exports = {
         };
     },
 
-   /**
-    * useItemRevive
-    * @param {number} itemID
-    * @param {number} pokemonID
-    * @returns {object} POGO request object
-    */
+    /**
+     * useItemRevive
+     * @param {number} itemID
+     * @param {number} pokemonID
+     * @returns {object} POGO request object
+     */
     useItemRevive(itemID, pokemonID) {
         return {
             type: RequestType.USE_ITEM_REVIVE,
@@ -316,11 +316,11 @@ module.exports = {
         };
     },
 
-   /**
-    * getPlayerProfile
-    * @param {string} playerName
-    * @returns {object} POGO request object
-    */
+    /**
+     * getPlayerProfile
+     * @param {string} playerName
+     * @returns {object} POGO request object
+     */
     getPlayerProfile(playerName) {
         return {
             type: RequestType.GET_PLAYER_PROFILE,
@@ -331,11 +331,11 @@ module.exports = {
         };
     },
 
-   /**
-    * getPlayerProfile
-    * @param {number} pokemonID
-    * @returns {object} POGO request object
-    */
+    /**
+     * getPlayerProfile
+     * @param {number} pokemonID
+     * @returns {object} POGO request object
+     */
     evolvePokemon(pokemonID) {
         return {
             type: RequestType.EVOLVE_POKEMON,
@@ -346,10 +346,10 @@ module.exports = {
         };
     },
 
-   /**
-    * getHatchedEggs
-    * @returns {object} POGO request object
-    */
+    /**
+     * getHatchedEggs
+     * @returns {object} POGO request object
+     */
     getHatchedEggs() {
         return {
             type: RequestType.GET_HATCHED_EGGS,
@@ -357,11 +357,11 @@ module.exports = {
         };
     },
 
-   /**
-    * encounterTutorialComplete
-    * @param {number} pokemonID
-    * @returns {object} POGO request object
-    */
+    /**
+     * encounterTutorialComplete
+     * @param {number} pokemonID
+     * @returns {object} POGO request object
+     */
     encounterTutorialComplete(pokemonID) {
         return {
             type: RequestType.ENCOUNTER_TUTORIAL_COMPLETE,
@@ -372,11 +372,11 @@ module.exports = {
         };
     },
 
-   /**
-    * levelUpRewards
-    * @param {number} level
-    * @returns {object} POGO request object
-    */
+    /**
+     * levelUpRewards
+     * @param {number} level
+     * @returns {object} POGO request object
+     */
     levelUpRewards(level) {
         return {
             type: RequestType.LEVEL_UP_REWARDS,
@@ -609,6 +609,23 @@ module.exports = {
         };
     },
 
+    setBuddyPokemon(pokemonID) {
+        return {
+            type: RequestType.SET_BUDDY_POKEMON,
+            message: new RequestMessages.SetBuddyPokemonMessage({
+                pokemon_id: pokemonID
+            }),
+            responseType: Responses.SetBuddyPokemonRepsonse
+        };
+    },
+
+    getBuddyWalked() {
+        return {
+            type: RequestType.GET_BUDDY_WALKED,
+            responseType: Responses.GetBuddyWalkedResponse
+        };
+    },
+
     getAssetDigest(platform, deviceManufacturer, deviceModel, locale, appVersion) {
         return {
             type: RequestType.GET_ASSET_DIGEST,
@@ -699,6 +716,26 @@ module.exports = {
                 send_push_notifications: sendPushNotifications
             }),
             responseType: Responses.MarkTutorialCompleteResponse
+        };
+    },
+
+    checkChallenge(isDebugRequest) {
+        return {
+            type: RequestType.CHECK_CHALLENGE,
+            message: new RequestMessages.CheckChallengeMessage({
+                debug_request: isDebugRequest
+            }),
+            responseType: Responses.CheckChallengeResponse
+        };
+    },
+
+    verifyChallenge(token) {
+        return {
+            type: RequestType.VERIFY_CHALLENGE,
+            message: new RequestMessages.VerifyChallengeMessage({
+                token: token
+            }),
+            responseType: Responses.VerifyChallengeResponse
         };
     },
 

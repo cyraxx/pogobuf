@@ -89,12 +89,12 @@ class EnvelopeRequest {
             let envelope = {
                 status_code: 2,
                 request_id: this.getRequestID(),
-                unknown12: 989
+                ms_since_last_locationfix: 100 + Math.floor(Math.random() * 900)
             };
 
             if (options.latitude) envelope.latitude = options.latitude;
             if (options.longitude) envelope.longitude = options.longitude;
-            if (options.altitude) envelope.altitude = options.altitude;
+            if (options.accuracy) envelope.accuracy = options.accuracy;
 
             if (options.authTicket) {
                 envelope.auth_ticket = options.authTicket;
@@ -146,16 +146,18 @@ class EnvelopeRequest {
             if (!options.authTicket) resolve(this.envelope);
 
             signatureBuilder.setAuthTicket(options.authTicket);
-            signatureBuilder.setLocation(this.envelope.latitude, this.envelope.longitude, this.envelope.altitude);
+            signatureBuilder.setLocation(this.envelope.latitude, this.envelope.longitude, this.envelope.accuracy);
             signatureBuilder.encrypt(this.envelope.requests, (err, sigEncrypted) => {
                 if (err) return reject(new Error(err));
 
-                this.envelope.unknown6 = new POGOProtos.Networking.Envelopes.Unknown6({
-                    request_type: 6,
-                    unknown2: new POGOProtos.Networking.Envelopes.Unknown6.Unknown2({
-                        encrypted_signature: sigEncrypted
+                this.envelope.platform_requests.push(
+                    new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
+                        type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
+                        request_message: new POGOProtos.Networking.Platform.Requests.SendEncryptedSignatureRequest({
+                            encrypted_signature: sigEncrypted
+                        }).encode()
                     })
-                });
+                );
 
                 return resolve(this.envelope);
             });
