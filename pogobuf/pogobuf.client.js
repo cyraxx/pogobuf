@@ -929,12 +929,13 @@ function Client() {
                     return;
                 }
 
-                envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
-                    type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
-                    request_message: new POGOProtos.Networking.Platform.Requests.SendEncryptedSignatureRequest({
-                        encrypted_signature: sigEncrypted
-                    }).encode()
-                }));
+                envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
+                    .PlatformRequest({
+                        type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
+                        request_message: new POGOProtos.Networking.Platform.Requests.SendEncryptedSignatureRequest({
+                            encrypted_signature: sigEncrypted
+                        }).encode()
+                    }));
 
                 resolve(envelope);
             });
@@ -998,17 +999,21 @@ function Client() {
                         if (response.statusCode >= 400 && response.statusCode < 500) {
                             /* These are permanent errors so throw StopError */
                             reject(new retry.StopError(
-                                `Status code ${response.statusCode} received from HTTPS request`));
+                                `Status code ${response.statusCode} received from HTTPS request`
+                            ));
                         } else {
                             /* Anything else might be recoverable so throw regular Error */
-                            reject(Error(`Status code ${response.statusCode} received from HTTPS request`));
+                            reject(Error(
+                                `Status code ${response.statusCode} received from HTTPS request`
+                            ));
                         }
                         return;
                     }
 
                     var responseEnvelope;
                     try {
-                        responseEnvelope = POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
+                        responseEnvelope =
+                            POGOProtos.Networking.Envelopes.ResponseEnvelope.decode(body);
                     } catch (e) {
                         self.emit('parse-envelope-error', body, e);
                         if (e.decoded) {
@@ -1058,12 +1063,15 @@ function Client() {
                     if (responseEnvelope.status_code === 3 || responseEnvelope.status_code === 51 ||
                         responseEnvelope.status_code >= 100) {
                         reject(new retry.StopError(
-                            `Status code ${responseEnvelope.status_code} received from RPC`));
+                            `Status code ${responseEnvelope.status_code} received from RPC`
+                        ));
                     }
 
                     /* These can be temporary so throw regular Error */
                     if (responseEnvelope.status_code !== 2 && responseEnvelope.status_code !== 1) {
-                        reject(Error(`Status code ${responseEnvelope.status_code} received from RPC`));
+                        reject(Error(
+                            `Status code ${responseEnvelope.status_code} received from RPC`
+                        ));
                         return;
                     }
 
@@ -1080,10 +1088,12 @@ function Client() {
 
                             var responseMessage;
                             try {
-                                responseMessage = requests[i].responseType.decode(responseEnvelope.returns[
-                                    i]);
+                                responseMessage = requests[i].responseType.decode(
+                                    responseEnvelope.returns[i]
+                                );
                             } catch (e) {
-                                self.emit('parse-response-error', responseEnvelope.returns[i].toBuffer(), e);
+                                self.emit('parse-response-error',
+                                    responseEnvelope.returns[i].toBuffer(), e);
                                 reject(new retry.StopError(e));
                                 return;
                             }
@@ -1096,13 +1106,17 @@ function Client() {
                         status_code: responseEnvelope.status_code,
                         request_id: responseEnvelope.request_id.toString(),
                         responses: responses.map((r, h) => ({
-                            name: Utils.getEnumKeyByValue(RequestType, requests[h].type),
+                            name: Utils.getEnumKeyByValue(
+                                RequestType, requests[h].type
+                            ),
                             type: requests[h].type,
                             data: r
                         }))
                     });
 
-                    if (self.automaticLongConversionEnabled) responses = Utils.convertLongs(responses);
+                    if (self.automaticLongConversionEnabled) {
+                        responses = Utils.convertLongs(responses);
+                    }
 
                     if (!responses.length) resolve(true);
                     else if (responses.length === 1) resolve(responses[0]);
