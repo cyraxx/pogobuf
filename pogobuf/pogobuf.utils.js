@@ -61,7 +61,7 @@ module.exports = {
 
     /**
      * Takes a getInventory() response and separates it into pokemon, items, candies, player data,
-     * eggs, and pokedex.
+     * eggs, quests, and pokedex.
      * @param {object} inventory - API response message as returned by getInventory()
      * @returns {object}
      * @static
@@ -82,7 +82,8 @@ module.exports = {
             inventory_upgrades: [],
             applied_items: [],
             egg_incubators: [],
-            candies: []
+            candies: [],
+            quests: []
         };
 
         inventory.inventory_delta.inventory_items.forEach(item => {
@@ -116,6 +117,9 @@ module.exports = {
             }
             if (itemdata.candy) {
                 ret.candies.push(itemdata.candy);
+            }
+            if (itemdata.quest) {
+                ret.quests.push(itemdata.quest);
             }
         });
 

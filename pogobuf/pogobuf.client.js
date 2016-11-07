@@ -479,7 +479,7 @@ function Client() {
                 gym_id: gymID,
                 battle_id: battleID,
                 attack_actions: attackActions,
-                last_retrieved_actions: lastRetrievedAction,
+                last_retrieved_action: lastRetrievedAction,
                 player_latitude: self.playerLatitude,
                 player_longitude: self.playerLongitude
             }),
