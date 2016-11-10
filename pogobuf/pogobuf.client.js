@@ -237,6 +237,17 @@ function Client() {
         });
     };
 
+    this.registerBackgroundDevice = function(deviceType, deviceID) {
+        return self.callOrChain({
+            type: RequestType.REGISTER_BACKGROUND_DEVICE,
+            message: new RequestMessages.RegisterBackgroundDeviceMessage({
+                device_type: deviceType,
+                device_id: deviceID
+            }),
+            responseType: Responses.RegisterBackgroundDeviceResponse
+        });
+    };
+
     this.fortSearch = function(fortID, fortLatitude, fortLongitude) {
         return self.callOrChain({
             type: RequestType.FORT_SEARCH,
