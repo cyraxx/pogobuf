@@ -145,6 +145,14 @@ function Client() {
     };
 
     /**
+     * Pass additional infos for the signature, like device_info.
+     * @param {object} infos
+     */
+    this.setSignatureInfos = function(infos) {
+        self.signatureInfos = infos;
+    }
+
+    /**
      * Sets a callback to be called for any envelope or request just before it is sent to
      * the server (mostly for debugging purposes).
      * @deprecated Use the raw-request event instead
@@ -817,6 +825,8 @@ function Client() {
     this.mapObjectsThrottlingEnabled = true;
     this.mapObjectsMinDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
     this.automaticLongConversionEnabled = true;
+    this.rpcId = 0;
+    this.signatureInfos = {};
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -840,12 +850,14 @@ function Client() {
      * @return {Long}
      */
     this.getRequestID = function() {
-        var bytes = crypto.randomBytes(8);
-        return Long.fromBits(
-            bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
-            bytes[4] << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7],
-            true
-        );
+        var rand = 0x53B77E48;
+        if (self.rpcId == 0) {
+            self.rpcId = 1;
+        } else {
+            rand = Math.floor(Math.random() * Math.pow(2, 31));
+        }
+        self.rpcId++;
+        return new Long(self.rpcId, rand & 0xFFFFFFFF);
     };
 
     /**
@@ -863,14 +875,20 @@ function Client() {
 
         if (self.playerLatitude) envelopeData.latitude = self.playerLatitude;
         if (self.playerLongitude) envelopeData.longitude = self.playerLongitude;
-        if (self.playerLocationAccuracy) envelopeData.accuracy = self.playerLocationAccuracy;
+        if (self.playerLocationAccuracy) {
+            envelopeData.accuracy = self.playerLocationAccuracy;
+        } else {
+            var values = [ 5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65 ];
+            values.unshift(Math.floor(Math.random() * (80 - 66)) + 66);
+            envelopeData.accuracy = values[Math.floor(values.length * Math.random())];
+        }
 
         if (self.authTicket) {
             envelopeData.auth_ticket = self.authTicket;
         } else if (!self.authType || !self.authToken) {
             throw Error('No auth info provided');
         } else {
-            envelopeData.auth_info = {
+            envelopeData.auth_info = {  
                 provider: self.authType,
                 token: {
                     contents: self.authToken,
@@ -933,6 +951,7 @@ function Client() {
 
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
+            self.signatureBuilder.setFields(self.signatureInfos || {});
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
                 if (err) {
