@@ -951,7 +951,11 @@ function Client() {
 
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
-            self.signatureBuilder.setFields(self.signatureInfos || {});
+            if (typeof self.signatureInfos === "function") {
+                self.signatureBuilder.setFields(self.signatureInfos());
+            } else if (self.signatureInfos) {
+                self.signatureBuilder.setFields(self.signatureInfos);
+            }
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
                 if (err) {
