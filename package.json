@@ -33,7 +33,7 @@
     "gpsoauthnode": "0.0.5",
     "long": "^3.2.0",
     "node-pogo-protos": "^2.1.0",
-    "node-pogo-signature": "git+https://github.com/starkevin/node-pogo-signature.git",
+    "node-pogo-signature": "^3.0.0",
     "request": "^2.74.0",
     "s2-geometry": "^1.2.7"
   },
