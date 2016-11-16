@@ -159,6 +159,14 @@ function PTCLogin() {
             });
         });
     };
+
+    /**
+     * Sets a proxy address to use for PTC logins.
+     * @param {string} proxy
+     */
+    this.setProxy = function(proxy) {
+        self.request = self.request.defaults({ proxy: proxy });
+    };    
 }
 
 module.exports = PTCLogin;
