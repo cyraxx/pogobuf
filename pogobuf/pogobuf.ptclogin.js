@@ -46,6 +46,7 @@ function PTCLogin() {
             self.request({
                 method: 'GET',
                 url: 'https://sso.pokemon.com/sso/login',
+                proxy: self.proxy,
                 qs: {
                     service: 'https://sso.pokemon.com/sso/oauth2.0/callbackAuthorize'
                 }
@@ -88,6 +89,7 @@ function PTCLogin() {
             self.request({
                 method: 'POST',
                 url: 'https://sso.pokemon.com/sso/login',
+                proxy: self.proxy,
                 qs: {
                     service: 'https://sso.pokemon.com/sso/oauth2.0/callbackAuthorize'
                 },
@@ -131,6 +133,7 @@ function PTCLogin() {
             self.request({
                 method: 'POST',
                 url: 'https://sso.pokemon.com/sso/oauth2.0/accessToken',
+                proxy: self.proxy,
                 form: {
                     client_id: 'mobile-app_pokemon-go',
                     client_secret: 'w8ScCUXJQc6kXKw8FiOhd8Fixzht18Dq3PEVkUCP5ZPxtgyWsbTvWHFLm2wNY0JR',
@@ -159,6 +162,14 @@ function PTCLogin() {
             });
         });
     };
+
+    /**
+     * Sets a proxy address to use for PTC logins.
+     * @param {string} proxy
+     */
+    this.setProxy = function(proxy) {
+        self.proxy = proxy;
+    };    
 }
 
 module.exports = PTCLogin;
