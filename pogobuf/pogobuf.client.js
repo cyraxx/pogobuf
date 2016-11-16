@@ -952,7 +952,7 @@ function Client() {
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
             if (typeof self.signatureInfos === "function") {
-                self.signatureBuilder.setFields(self.signatureInfos());
+                self.signatureBuilder.setFields(self.signatureInfos(envelope));
             } else if (self.signatureInfos) {
                 self.signatureBuilder.setFields(self.signatureInfos);
             }
