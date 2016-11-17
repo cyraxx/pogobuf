@@ -75,6 +75,7 @@ function Client() {
 
         return self.batchStart()
             .getPlayer()
+            .checkChallenge()
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()
@@ -1168,7 +1169,7 @@ function Client() {
     this.processInitialData = function(responses) {
         // Extract the minimum delay of getMapObjects()
         if (responses.length >= 5) {
-            var settingsResponse = responses[4];
+            var settingsResponse = responses[5];
             if (!settingsResponse.error &&
                 settingsResponse.settings &&
                 settingsResponse.settings.map_settings &&
