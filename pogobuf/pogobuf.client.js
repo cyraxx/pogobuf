@@ -189,9 +189,14 @@ function Client() {
         });
     };
 
-    this.getPlayer = function() {
+    this.getPlayer = function(country, language, timezone) {
         return self.callOrChain({
             type: RequestType.GET_PLAYER,
+            message: new RequestMessages.GetPlayerMessage({
+                country: country,
+                language: language,
+                timezone: timezone
+            }),
             responseType: Responses.GetPlayerResponse
         });
     };
