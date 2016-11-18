@@ -31,11 +31,9 @@ function GoogleLogin() {
      * @return {Promise}
      */
     this.login = function(username, password) {
-        return self.getMasterToken(username, password).then((loginData) => {
-            return self.getToken(username, loginData);
-        }).then((authData) => {
-            return authData.Auth;
-        });
+        return self.getMasterToken(username, password)
+            .then(loginData => self.getToken(username, loginData))
+            .then(authData => authData.auth);
     };
 
     /**
@@ -50,9 +48,7 @@ function GoogleLogin() {
             androidId: GOOGLE_LOGIN_ANDROID_ID,
             masterToken: token
         };
-        return self.getToken(username, loginData).then((authData) => {
-            return authData.Auth;
-        });
+        return self.getToken(username, loginData).then(authData => authData.Auth);
     };
 
     /**
