@@ -193,9 +193,11 @@ function Client() {
         return self.callOrChain({
             type: RequestType.GET_PLAYER,
             message: new RequestMessages.GetPlayerMessage({
-                country: country,
-                language: language,
-                timezone: timezone
+                player_locale: {
+                    country: country,
+                    language: language,
+                    timezone: timezone
+                }
             }),
             responseType: Responses.GetPlayerResponse
         });
