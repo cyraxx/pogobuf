@@ -151,7 +151,7 @@ function Client() {
      */
     this.setSignatureInfos = function(infos) {
         self.signatureInfos = infos;
-    }
+    };
 
     /**
      * Sets a callback to be called for any envelope or request just before it is sent to
@@ -859,7 +859,7 @@ function Client() {
      */
     this.getRequestID = function() {
         var rand = 0x53B77E48;
-        if (self.rpcId == 0) {
+        if (self.rpcId === 0) {
             self.rpcId = 1;
         } else {
             rand = Math.floor(Math.random() * Math.pow(2, 31));
@@ -886,7 +886,7 @@ function Client() {
         if (self.playerLocationAccuracy) {
             envelopeData.accuracy = self.playerLocationAccuracy;
         } else {
-            var values = [ 5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65 ];
+            var values = [5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65];
             values.unshift(Math.floor(Math.random() * (80 - 66)) + 66);
             envelopeData.accuracy = values[Math.floor(values.length * Math.random())];
         }
@@ -896,7 +896,7 @@ function Client() {
         } else if (!self.authType || !self.authToken) {
             throw Error('No auth info provided');
         } else {
-            envelopeData.auth_info = {  
+            envelopeData.auth_info = {
                 provider: self.authType,
                 token: {
                     contents: self.authToken,
@@ -959,7 +959,7 @@ function Client() {
 
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
-            if (typeof self.signatureInfos === "function") {
+            if (typeof self.signatureInfos === 'function') {
                 self.signatureBuilder.setFields(self.signatureInfos(envelope));
             } else if (self.signatureInfos) {
                 self.signatureBuilder.setFields(self.signatureInfos);
