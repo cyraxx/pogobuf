@@ -250,6 +250,30 @@ module.exports = {
     },
 
     /**
+     * Utility method to get the distance in meters between two locations
+     * @param {number} lat1 - first latitude
+     * @param {number} lng1 - first longitude
+     * @param {number} lat2 - second latitude
+     * @param {number} lng2 - second longitude
+     * @returns {object}
+     * @static
+     */
+    haversineDistance: function(lat1, lng1, lat2, lng2) {
+        var R = 6371000, // radius of earth in meters
+            lat1Radians = lat1 * Math.PI / 180,
+            lat2Radians = lat2 * Math.PI / 180,
+            latDelta = (lat2 - lat1) * Math.PI / 180,
+            lngDelta = (lng2 - lng1) * Math.PI / 180;
+
+        var a = Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
+                Math.cos(lat1Radians) * Math.cos(lat2Radians) *
+                Math.sin(lngDelta / 2) * Math.sin(lngDelta / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    },
+
+    /**
      * Utility method to convert all Long.js objects to integers or strings
      * @param {object} object – An object
      * @returns {object}

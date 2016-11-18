@@ -15,7 +15,6 @@ const RequestType = POGOProtos.Networking.Requests.RequestType,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
-const DEFAULT_MAP_OBJECTS_DELAY = 5;
 
 /**
  * Pokémon Go RPC client.
@@ -79,8 +78,7 @@ function Client() {
             .getInventory()
             .checkAwardedBadges()
             .downloadSettings()
-            .batchCall()
-            .then(self.processInitialData);
+            .batchCall();
     };
 
     /**
@@ -822,7 +820,8 @@ function Client() {
 
     this.maxTries = 5;
     this.mapObjectsThrottlingEnabled = true;
-    this.mapObjectsMinDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
+    this.mapObjectsMaxDelay = 30 * 1000;
+    this.mapObjectsMinDistance = 10;
     this.automaticLongConversionEnabled = true;
 
     /**
@@ -972,23 +971,40 @@ function Client() {
         // If the requests include a map objects request, make sure the minimum delay
         // since the last call has passed
         if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
-            var now = new Date().getTime(),
-                delayNeeded = self.lastMapObjectsCall + self.mapObjectsMinDelay - now;
 
-            if (delayNeeded > 0 && self.mapObjectsThrottlingEnabled) {
+            // Check distance traveled to see if it is past refresh distance
+            var refreshRequired = !self.withinInteractionRange(
+                self.lastMapObjectsLatitude,
+                self.lastMapObjectsLongitude,
+                self.mapObjectsMinDistance);
+            var now = new Date().getTime(),
+                delayNeeded = self.lastMapObjectsCall + self.mapObjectsMaxDelay - now;
+
+            if (delayNeeded > 0 && self.mapObjectsThrottlingEnabled && !refreshRequired) {
                 return Promise.delay(delayNeeded).then(() => self.callRPC(requests, envelope));
             }
 
             self.lastMapObjectsCall = now;
+            self.lastMapObjectsLatitude = self.playerLatitude;
+            self.lastMapObjectsLongitude = self.playerLongitude;
         }
 
-        if (self.maxTries <= 1) return self.tryCallRPC(requests, envelope);
+        var responses;
+        if (self.maxTries <= 1) responses = self.tryCallRPC(requests, envelope);
 
-        return retry(() => self.tryCallRPC(requests, envelope), {
+        responses = retry(() => self.tryCallRPC(requests, envelope), {
             interval: 300,
             backoff: 2,
             max_tries: self.maxTries
         });
+
+        // Check if we need to save settings
+        var downloadSettingsIndex = requests.findIndex(r => r.type === RequestType.DOWNLOAD_SETTINGS);
+        if (downloadSettingsIndex !== -1) {
+            return responses.then(r => this.processDownloadSettings(r, downloadSettingsIndex));
+        }
+
+        return responses;
     };
 
     /**
@@ -1144,22 +1160,44 @@ function Client() {
     };
 
     /**
-     * Processes the data received from the initial API call during init().
+     * Determines the interaction range
+     * @private
+     * @param {number} lat - object's latitude
+     * @param {number} lng - object's longitude
+     * @param {number} cap - max distance
+     * @return {boolean} response - Unomdified responses (to send back to Promise)
+     */
+    this.withinInteractionRange = function(lat, lng, cap) {
+        // Check distance traveled to see if it is past refresh distance
+        var response = true;
+        if (self.playerLatitude && self.playerLongitude && lat && lng && cap) {
+            var distance = Utils.haversineDistance(
+                self.playerLatitude,
+                self.playerLongitude,
+                lat,
+                lng);
+            response = distance < cap;
+        }
+        return response;
+    };
+
+    /**
+     * Processes the data received from any download settings API call.
      * @private
      * @param {Object[]} responses - Respones from API call
+     * @param {integer} index - index of the download settings response
      * @return {Object[]} respones - Unomdified responses (to send back to Promise)
      */
-    this.processInitialData = function(responses) {
-        // Extract the minimum delay of getMapObjects()
-        if (responses.length >= 5) {
-            var settingsResponse = responses[4];
-            if (!settingsResponse.error &&
-                settingsResponse.settings &&
-                settingsResponse.settings.map_settings &&
-                settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
-            ) {
-                self.mapObjectsMinDelay =
-                    settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000;
+    this.processDownloadSettings = function(responses, index) {
+        // Extract the settings we care about
+        var settingsResponse = responses[index];
+        if (settingsResponse && !settingsResponse.error && settingsResponse.settings) {
+            var settings = settingsResponse.settings;
+            if (settings.map_settings) {
+                self.mapObjectsMaxDelay =
+                    settings.map_settings.get_map_objects_max_refresh_seconds * 1000;
+                self.mapObjectsMinDistance =
+                    settings.map_settings.get_map_objects_min_distance_meters;
             }
         }
         return responses;
