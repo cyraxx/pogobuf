@@ -92,11 +92,11 @@ function PTCLogin() {
                     service: 'https://sso.pokemon.com/sso/oauth2.0/callbackAuthorize'
                 },
                 form: {
-                    lt: sessionData.lt,
-                    execution: sessionData.execution,
+                    'lt': sessionData.lt,
+                    'execution': sessionData.execution,
                     '_eventId': 'submit',
-                    username: username,
-                    password: password
+                    'username': username,
+                    'password': password
                 }
             }, (err, response) => {
                 if (err) {

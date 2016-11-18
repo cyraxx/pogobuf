@@ -54,9 +54,7 @@ module.exports = {
         }
         /* eslint-enable new-cap */
 
-        return cells.map((cell) => {
-            return s2.toId(cell);
-        });
+        return cells.map(s2.toId);
     },
 
     /**

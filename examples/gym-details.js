@@ -1,17 +1,17 @@
 'use strict';
 
 /*
-	This example script performs a sequence of actions:
+    This example script performs a sequence of actions:
 
-	1. Geocode an address to get latitude and longitude
-	2. Login to Pokémon Trainer Club account
-	3. Retrieve nearby map objects
-	4. Retrieve detailed data for all gyms in the area
-	5. Display information about each gym
+    1. Geocode an address to get latitude and longitude
+    2. Login to Pokémon Trainer Club account
+    3. Retrieve nearby map objects
+    4. Retrieve detailed data for all gyms in the area
+    5. Display information about each gym
 
-	It shows how to use the pogobuf library to perform requests and work with the returend data.
+    It shows how to use the pogobuf library to perform requests and work with the returend data.
 
-	In addition to pogobuf, this example requires the npm package node-geocoder.
+    In addition to pogobuf, this example requires the npm package node-geocoder.
 */
 
 const pogobuf = require('pogobuf'),
@@ -25,7 +25,8 @@ var login = new pogobuf.PTCLogin(),
     lng;
 
 // Get latitude and longitude from geocoder
-// Note: To avoid getting softbanned, change the address to one that is close to where you last used your account
+// Note: To avoid getting softbanned, change the address to one that is close to where you
+// last used your account
 geocoder.geocode('2 Bryant St, San Francisco')
     .then(location => {
         if (!location.length) {
@@ -55,7 +56,8 @@ geocoder.geocode('2 Bryant St, San Francisco')
         return client.getMapObjects(cellIDs, Array(cellIDs.length).fill(0));
     })
     .then(mapObjects => {
-        // Get all gyms from all returned map cells, then retrieve all of their details in one batch call
+        // Get all gyms from all returned map cells, then retrieve all of their details in
+        // one batch call
         client.batchStart();
 
         mapObjects.map_cells.map(cell => cell.forts)
