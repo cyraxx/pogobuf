@@ -1,12 +1,14 @@
 'use strict';
 
 /*
-	This example script shows how to work with the getInventory() API call and the splitInventory() function.
+    This example script shows how to work with the getInventory() API call and the
+    splitInventory() function.
 */
 const pogobuf = require('pogobuf'),
     POGOProtos = require('node-pogo-protos');
 
-// Note: To avoid getting softbanned, change these coordinates to something close to where you last used your account
+// Note: To avoid getting softbanned, change these coordinates to something close to where you
+// last used your account
 const lat = 37.7876146,
     lng = -122.3884353;
 
@@ -40,7 +42,8 @@ login.login('your-username@gmail.com', 'your-google-password')
 
         console.log('Items:');
         inventory.items.forEach(item => {
-            console.log(item.count + 'x ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Inventory.Item.ItemId, item.item_id));
+            console.log(item.count + 'x ' +
+                pogobuf.Utils.getEnumKeyByValue(POGOProtos.Inventory.Item.ItemId, item.item_id));
         });
     })
     .catch(console.error);

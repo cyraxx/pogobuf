@@ -15,6 +15,13 @@ function PTCLogin() {
     }
     const self = this;
 
+    self.request = request.defaults({
+        headers: {
+            'User-Agent': 'Niantic App'
+        },
+        jar: request.jar()
+    });
+
     /**
      * Performs the PTC login process and returns a Promise that will be resolved with the
      * auth token.
@@ -23,13 +30,6 @@ function PTCLogin() {
      * @return {Promise}
      */
     this.login = function(username, password) {
-        self.request = request.defaults({
-            headers: {
-                'User-Agent': 'Niantic App'
-            },
-            jar: request.jar()
-        });
-
         return self.getSession()
             .then(sessionData => self.getTicket(sessionData, username, password))
             .then(self.getToken);
@@ -92,11 +92,11 @@ function PTCLogin() {
                     service: 'https://sso.pokemon.com/sso/oauth2.0/callbackAuthorize'
                 },
                 form: {
-                    lt: sessionData.lt,
-                    execution: sessionData.execution,
+                    'lt': sessionData.lt,
+                    'execution': sessionData.execution,
                     '_eventId': 'submit',
-                    username: username,
-                    password: password
+                    'username': username,
+                    'password': password
                 }
             }, (err, response) => {
                 if (err) {
@@ -158,6 +158,14 @@ function PTCLogin() {
                 resolve(qs.access_token);
             });
         });
+    };
+
+    /**
+     * Sets a proxy address to use for PTC logins.
+     * @param {string} proxy
+     */
+    this.setProxy = function(proxy) {
+        self.request = self.request.defaults({ proxy: proxy });
     };
 }
 

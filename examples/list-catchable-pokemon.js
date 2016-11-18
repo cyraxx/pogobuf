@@ -1,18 +1,19 @@
 'use strict';
 
 /*
-    This example script repeatedly queries the area near the given coordinates for catchable Pokémon.
+    This example script repeatedly queries the area near the given coordinates for
+    catchable Pokémon.
 */
 
 const pogobuf = require('pogobuf'),
     POGOProtos = require('node-pogo-protos'),
-    bluebird = require('bluebird'),
-    Long = require('long');
+    bluebird = require('bluebird');
 
 const google = new pogobuf.GoogleLogin(),
     client = new pogobuf.Client();
 
-// Note: To avoid getting softbanned, change these coordinates to something close to where you last used your account
+// Note: To avoid getting softbanned, change these coordinates to something close to where you
+// last used your account
 const lat = 37.7876146,
     lng = -122.3884353;
 

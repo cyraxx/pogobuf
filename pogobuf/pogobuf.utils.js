@@ -54,9 +54,7 @@ module.exports = {
         }
         /* eslint-enable new-cap */
 
-        return cells.map((cell) => {
-            return s2.toId(cell);
-        });
+        return cells.map(s2.toId);
     },
 
     /**
@@ -261,8 +259,9 @@ module.exports = {
         if (!object || typeof object !== 'object') return object;
 
         if (Long.isLong(object)) {
-            return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ?
-                object.toNumber() : object.toString();
+            return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER)
+                && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER)
+                ? object.toNumber() : object.toString();
         }
 
         for (var i in object) {
