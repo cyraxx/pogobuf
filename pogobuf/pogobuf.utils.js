@@ -261,8 +261,9 @@ module.exports = {
         if (!object || typeof object !== 'object') return object;
 
         if (Long.isLong(object)) {
-            return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER) && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER) ?
-                object.toNumber() : object.toString();
+            return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER)
+                && object.greaterThanOrEqual(Number.MIN_SAFE_INTEGER)
+                ? object.toNumber() : object.toString();
         }
 
         for (var i in object) {
