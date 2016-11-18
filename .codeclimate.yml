@@ -3,11 +3,15 @@ engines:
     enabled: true
     config:
       languages:
-      - javascript
+        javascript:
+          mass_threshold: 150
   eslint:
     enabled: true
     channel: "eslint-3"
-  fixme:
+    checks:
+      import/no-unresolved:
+        enabled: false
     enabled: true
 exclude_paths:
+- examples/
 - node_modules/
