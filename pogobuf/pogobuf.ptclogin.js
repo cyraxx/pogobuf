@@ -166,7 +166,7 @@ function PTCLogin() {
      */
     this.setProxy = function(proxy) {
         self.request = self.request.defaults({ proxy: proxy });
-    };    
+    };
 }
 
 module.exports = PTCLogin;
