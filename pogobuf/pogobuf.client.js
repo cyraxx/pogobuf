@@ -1,7 +1,6 @@
 'use strict';
 
-const crypto = require('crypto'),
-    EventEmitter = require('events').EventEmitter,
+const EventEmitter = require('events').EventEmitter,
     Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
     pogoSignature = require('node-pogo-signature'),
