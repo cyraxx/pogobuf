@@ -26,6 +26,7 @@ function Client() {
         return new Client();
     }
     const self = this;
+    this.POGOProtos = POGOProtos;
 
     /**
      * PUBLIC METHODS
@@ -61,7 +62,7 @@ function Client() {
      * @return {Promise} promise
      */
     this.init = function() {
-        self.signatureBuilder = new pogoSignature.Builder();
+        self.signatureBuilder = new pogoSignature.Builder({ protos: this.POGOProtos });
         self.lastMapObjectsCall = 0;
 
         /*
