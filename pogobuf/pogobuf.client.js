@@ -26,7 +26,7 @@ function Client() {
         return new Client();
     }
     const self = this;
- 
+
     /**
      * PUBLIC METHODS
      */
