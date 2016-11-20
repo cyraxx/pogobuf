@@ -148,8 +148,8 @@ function Client() {
      * Pass additional infos for the signature, like device_info.
      * @param {object} infos
      */
-    this.setSignatureInfos = function(infos) {
-        self.signatureInfos = infos;
+    this.setSignatureInfo = function(infos) {
+        self.signatureInfo = infos;
     };
 
     /**
