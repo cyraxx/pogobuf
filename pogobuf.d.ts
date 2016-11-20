@@ -435,7 +435,7 @@ declare namespace pogobuf {
          * @param {number} longitude Longitude
          * @param {number} radius Radius of the square in cells (optional) (default value is 3)
          */
-        function getCellIDs(latitude: number, longitude: number, radius?: number): string[];
+        function getCellIDs(latitude: number, longitude: number, radius?: number, level?: number): string[];
 
         /**
          * Takes a getInventory() response and separates it into pokemon, items, candies, player data, eggs, and pokedex.
