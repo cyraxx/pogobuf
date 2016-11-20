@@ -15,17 +15,19 @@ module.exports = {
      * @param {number} lat
      * @param {number} lng
      * @param {number} [radius=3]
+     * @param {number} [level=15]
      * @returns {array}
      * @static
      */
-    getCellIDs: function(lat, lng, radius) {
+    getCellIDs: function(lat, lng, radius, level) {
         if (typeof radius === 'undefined') radius = 3;
+        if (typeof level === 'undefined') level = 15;
 
         /* eslint-disable new-cap */
         var origin = s2.S2Cell.FromLatLng({
             lat: lat,
             lng: lng
-        }, 15);
+        }, level);
         var cells = [];
 
         cells.push(origin.toHilbertQuadkey()); // middle block

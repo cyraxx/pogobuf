@@ -27,7 +27,7 @@ google.login(username, password).then(token => {
 }).then(() => {
     console.log('Authenticated, waiting for first map refresh (30s)');
     setInterval(() => {
-        var cellIDs = pogobuf.Utils.getCellIDs(lat, lng);
+        var cellIDs = pogobuf.Utils.getCellIDs(lat, lng, 5, 17);
         return bluebird.resolve(client.getMapObjects(cellIDs, Array(cellIDs.length).fill(0))).then(mapObjects => {
             return mapObjects.map_cells;
         }).each(cell => {
