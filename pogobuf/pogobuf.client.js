@@ -1,7 +1,6 @@
 'use strict';
 
-const crypto = require('crypto'),
-    EventEmitter = require('events').EventEmitter,
+const EventEmitter = require('events').EventEmitter,
     Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
     pogoSignature = require('node-pogo-signature'),
@@ -62,7 +61,7 @@ function Client() {
      * @return {Promise} promise
      */
     this.init = function() {
-        self.signatureBuilder = new pogoSignature.Builder();
+        self.signatureBuilder = new pogoSignature.Builder({ protos: POGOProtos });
         self.lastMapObjectsCall = 0;
 
         /*
@@ -75,6 +74,7 @@ function Client() {
 
         return self.batchStart()
             .getPlayer()
+            .checkChallenge()
             .getHatchedEggs()
             .getInventory()
             .checkAwardedBadges()
@@ -142,6 +142,14 @@ function Client() {
      */
     this.setMapObjectsThrottlingEnabled = function(enable) {
         self.mapObjectsThrottlingEnabled = enable;
+    };
+
+    /**
+     * Pass additional infos for the signature, like device_info.
+     * @param {object} infos
+     */
+    this.setSignatureInfo = function(infos) {
+        self.signatureInfo = infos;
     };
 
     /**
@@ -824,6 +832,8 @@ function Client() {
     this.mapObjectsThrottlingEnabled = true;
     this.mapObjectsMinDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
     this.automaticLongConversionEnabled = true;
+    this.rpcId = 0;
+    this.signatureInfo = {};
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -847,12 +857,14 @@ function Client() {
      * @return {Long}
      */
     this.getRequestID = function() {
-        var bytes = crypto.randomBytes(8);
-        return Long.fromBits(
-            bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
-            bytes[4] << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7],
-            true
-        );
+        var rand = 0x53B77E48;
+        if (self.rpcId === 0) {
+            self.rpcId = 1;
+        } else {
+            rand = Math.floor(Math.random() * Math.pow(2, 31));
+        }
+        self.rpcId++;
+        return new Long(self.rpcId, rand & 0xFFFFFFFF);
     };
 
     /**
@@ -870,7 +882,13 @@ function Client() {
 
         if (self.playerLatitude) envelopeData.latitude = self.playerLatitude;
         if (self.playerLongitude) envelopeData.longitude = self.playerLongitude;
-        if (self.playerLocationAccuracy) envelopeData.accuracy = self.playerLocationAccuracy;
+        if (self.playerLocationAccuracy) {
+            envelopeData.accuracy = self.playerLocationAccuracy;
+        } else {
+            var values = [5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65];
+            values.unshift(Math.floor(Math.random() * (80 - 66)) + 66);
+            envelopeData.accuracy = values[Math.floor(values.length * Math.random())];
+        }
 
         if (self.authTicket) {
             envelopeData.auth_ticket = self.authTicket;
@@ -940,6 +958,11 @@ function Client() {
 
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
+            if (typeof self.signatureInfo === 'function') {
+                self.signatureBuilder.setFields(self.signatureInfo(envelope));
+            } else if (self.signatureInfo) {
+                self.signatureBuilder.setFields(self.signatureInfo);
+            }
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
                 if (err) {
@@ -1152,7 +1175,7 @@ function Client() {
     this.processInitialData = function(responses) {
         // Extract the minimum delay of getMapObjects()
         if (responses.length >= 5) {
-            var settingsResponse = responses[4];
+            var settingsResponse = responses[5];
             if (!settingsResponse.error &&
                 settingsResponse.settings &&
                 settingsResponse.settings.map_settings &&
