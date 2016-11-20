@@ -833,7 +833,7 @@ function Client() {
     this.mapObjectsMinDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
     this.automaticLongConversionEnabled = true;
     this.rpcId = 0;
-    this.signatureInfos = {};
+    this.signatureInfo = {};
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -958,10 +958,10 @@ function Client() {
 
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
-            if (typeof self.signatureInfos === 'function') {
-                self.signatureBuilder.setFields(self.signatureInfos(envelope));
-            } else if (self.signatureInfos) {
-                self.signatureBuilder.setFields(self.signatureInfos);
+            if (typeof self.signatureInfo === 'function') {
+                self.signatureBuilder.setFields(self.signatureInfo(envelope));
+            } else if (self.signatureInfo) {
+                self.signatureBuilder.setFields(self.signatureInfo);
             }
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
