@@ -57,10 +57,13 @@ function Client() {
     };
 
     /**
-     * Performs the initial API call.
+     * Performs client initialization and downloads needed settings from the API.
+     * @param {boolean} [downloadSettings=true] - Set to false to disable API calls
      * @return {Promise} promise
      */
-    this.init = function() {
+    this.init = function(downloadSettings) {
+        if (typeof downloadSettings === 'undefined') downloadSettings = true;
+
         self.signatureBuilder = new pogoSignature.Builder({ protos: POGOProtos });
         self.lastMapObjectsCall = 0;
 
@@ -72,15 +75,11 @@ function Client() {
         */
         self.endpoint = INITIAL_ENDPOINT;
 
-        return self.batchStart()
-            .getPlayer()
-            .checkChallenge()
-            .getHatchedEggs()
-            .getInventory()
-            .checkAwardedBadges()
-            .downloadSettings()
-            .batchCall()
-            .then(self.processInitialData);
+        if (downloadSettings) {
+            return self.downloadSettings().then(self.processSettingsResponse);
+        } else {
+            return Promise.resolve(true);
+        }
     };
 
     /**
@@ -1167,25 +1166,23 @@ function Client() {
     };
 
     /**
-     * Processes the data received from the initial API call during init().
+     * Processes the data received from the downloadSettings API call during init().
      * @private
-     * @param {Object[]} responses - Respones from API call
-     * @return {Object[]} respones - Unomdified responses (to send back to Promise)
+     * @param {Object} settingsResponse - Response from API call
+     * @return {Object} response - Unomdified response (to send back to Promise)
      */
-    this.processInitialData = function(responses) {
+    this.processSettingsResponse = function(settingsResponse) {
         // Extract the minimum delay of getMapObjects()
-        if (responses.length >= 5) {
-            var settingsResponse = responses[5];
-            if (!settingsResponse.error &&
-                settingsResponse.settings &&
-                settingsResponse.settings.map_settings &&
-                settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
-            ) {
-                self.mapObjectsMinDelay =
-                    settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000;
-            }
+        if (settingsResponse &&
+            !settingsResponse.error &&
+            settingsResponse.settings &&
+            settingsResponse.settings.map_settings &&
+            settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
+        ) {
+            self.mapObjectsMinDelay =
+                settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000;
         }
-        return responses;
+        return settingsResponse;
     };
 }
 
