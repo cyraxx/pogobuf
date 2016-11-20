@@ -29,6 +29,7 @@ module.exports = {
         "no-param-reassign": 0,
         "no-plusplus": 0,
         "no-prototype-builtins": 0,
+        "no-restricted-properties": 0,
         "no-restricted-syntax": [2,
             "LabeledStatement",
             "WithStatement"
