@@ -144,11 +144,14 @@ function Client() {
     };
 
     /**
-     * Pass additional infos for the signature, like device_info.
-     * @param {object} infos
+     * Sets additional fields for the envelope signature, such as device_info.
+     * Accepts an object of fields that go into POGOProtos.Networking.Envelopes.Signature,
+     * or a callback function that will be called for every envelope with the envelope
+     * as its single parameter and should return such an object.
+     * @param {object|function} info
      */
-    this.setSignatureInfo = function(infos) {
-        self.signatureInfo = infos;
+    this.setSignatureInfo = function(info) {
+        self.signatureInfo = info;
     };
 
     /**
