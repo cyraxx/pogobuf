@@ -32,15 +32,10 @@ declare namespace pogobuf {
         setPosition(latitude: number, longitude: number, accuracy?: number): void;
 
         /**
-         * Performs the initial API call.
+         * Performs client initialization and downloads needed settings from the API.
+         * @param {boolean} downloadSettings Set to false to disable API calls
          */
-        init(): Promise<[
-            POGOProtos.Networking.Responses.GetPlayerResponse,
-            POGOProtos.Networking.Responses.GetHatchedEggsResponse,
-            POGOProtos.Networking.Responses.GetInventoryResponse,
-            POGOProtos.Networking.Responses.CheckAwardedBadgesResponse,
-            POGOProtos.Networking.Responses.DownloadSettingsResponse
-        ]>;
+        init(downloadSettings?: boolean): Promise<[POGOProtos.Networking.Responses.DownloadSettingsResponse]>;
 
         /**
          * Sets batch mode. All further API requests will be held and executed in one RPC call when batchCall() is called.
@@ -58,6 +53,21 @@ declare namespace pogobuf {
         batchCall(): Promise<any>;
 
         /**
+         * Enables or disables automatic conversion of Long.js
+         * to primitive types in API response objects.
+         * @param {boolean} enable
+         */
+        setAutomaticLongConversionEnabled(enable: boolean): void;
+
+        /**
+         * Enables or disables the built-in throttling of getMapObjects() calls based on the
+         * minimum refresh setting received from the server. Enabled by default, disable if you
+         * want to manage your own throttling.
+         * @param {boolean} enable
+         */
+        setMapObjectsThrottlingEnabled(enable: boolean): void;
+
+        /**
          * Sets the maximum times to try RPC calls until they succeed (default is 5 tries).
          * Set to 1 to disable retry logic.
          * @param {number} maxTries
@@ -71,20 +81,13 @@ declare namespace pogobuf {
         setProxy(proxy: string): void;
 
         /**
-         * Enables or disables the built-in throttling of getMapObjects() calls based on the
-         * minimum refresh setting received from the server. Enabled by default, disable if you
-         * want to manage your own throttling.
-         * @param {boolean} enable
+         * Sets additional fields for the envelope signature, such as device_info.
+         * Accepts an object of fields that go into POGOProtos.Networking.Envelopes.Signature,
+         * or a callback function that will be called for every envelope with the envelope
+         * as its single parameter and should return such an object.
+         * @param {object|function} info
          */
-        setMapObjectsThrottlingEnabled(enable: boolean): void;
-
-        /**
-         * Enables or disables automatic conversion of Long.js
-         * to primitive types in API response objects.
-         * @param {boolean} enable
-         */
-        setAutomaticLongConversionEnabled(enable: boolean): void;
-
+        setSignatureInfo(info: Object | Function): void;
 
         // Pokémon Go API methods
 
@@ -231,6 +234,9 @@ declare namespace pogobuf {
         ): Promise<POGOProtos.Networking.Responses.GetMapObjectsResponse>;
 
         getPlayer(
+            country: string,
+            language: string,
+            timezone: string
         ): Promise<POGOProtos.Networking.Responses.GetPlayerResponse>;
 
         getPlayerProfile(
@@ -262,6 +268,11 @@ declare namespace pogobuf {
 
         playerUpdate(
         ): Promise<POGOProtos.Networking.Responses.PlayerUpdateResponse>;
+
+        registerBackgroundDevice(
+            deviceType: string,
+            deviceID: string
+        ): Promise<POGOProtos.Networking.Responses.RegisterBackgroundDeviceResponse>;
 
         recycleInventoryItem(
             itemID: POGOProtos.Inventory.Item.ItemId,
@@ -364,6 +375,12 @@ declare namespace pogobuf {
          * @param {string} password
          */
         login(username: string, password: string): Promise<string>;
+
+        /**
+         * Sets a proxy address to use for PTC logins.
+         * @param {string} proxy
+         */
+        setProxy(proxy: string): void;
     }
 
     /**
@@ -401,7 +418,8 @@ declare namespace pogobuf {
             inventory_upgrades: POGOProtos.Inventory.InventoryUpgrades[],
             applied_items: POGOProtos.Inventory.AppliedItems[],
             egg_incubators: POGOProtos.Inventory.EggIncubators[],
-            candies: POGOProtos.Inventory.Candy[]
+            candies: POGOProtos.Inventory.Candy[],
+            quests: POGOProtos.Data.Quests.Quest[]
         }
 
         interface ItemTemplates {
@@ -434,11 +452,12 @@ declare namespace pogobuf {
          * @param {number} latitude Latitude
          * @param {number} longitude Longitude
          * @param {number} radius Radius of the square in cells (optional) (default value is 3)
+         * @param {number} level S2 cell level (default value is 15)
          */
         function getCellIDs(latitude: number, longitude: number, radius?: number, level?: number): string[];
 
         /**
-         * Takes a getInventory() response and separates it into pokemon, items, candies, player data, eggs, and pokedex.
+         * Takes a getInventory() response and separates it into pokemon, items, candies, player data, eggs, quests, and pokedex.
          * @param {object} inventory API response message as returned by getInventory()
          */
         function splitInventory(inventory: POGOProtos.Networking.Responses.GetInventoryResponse): Inventory;
