@@ -861,7 +861,7 @@ function Client() {
         if (self.rpcId === 0) {
             self.rpcId = 1;
         } else {
-            rand = Math.floor(Math.random() * Math.pow(2, 31));
+            rand = Math.floor(Math.random() * 2 ** 31);
         }
         self.rpcId++;
         return new Long(self.rpcId, rand & 0xFFFFFFFF);
