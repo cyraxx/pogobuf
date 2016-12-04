@@ -63,8 +63,8 @@ function PTCLogin() {
                 var sessionResponse = null;
                 try {
                     sessionResponse = JSON.parse(body);
-                } catch(e) {
-                    reject(Error(`Unexpected response received from PTC login`));
+                } catch (e) {
+                    reject(Error('Unexpected response received from PTC login'));
                     return;
                 }
 
