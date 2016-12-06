@@ -113,7 +113,7 @@ module.exports = {
                 ret.applied_items.push(itemdata.applied_items);
             }
             if (itemdata.egg_incubators) {
-                ret.egg_incubators.push(itemdata.egg_incubators.egg_incubator);
+                ret.egg_incubators = ret.egg_incubators.concat(itemdata.egg_incubators.egg_incubator);
             }
             if (itemdata.candy) {
                 ret.candies.push(itemdata.candy);
