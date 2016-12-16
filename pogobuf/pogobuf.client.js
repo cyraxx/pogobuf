@@ -49,11 +49,20 @@ function Client() {
      * @param {number} latitude - The player's latitude
      * @param {number} longitude - The player's longitude
      * @param {number} [accuracy=0] - The location accuracy in m
+     * @param {number} [altitude=0] - The player's altitude
      */
-    this.setPosition = function(latitude, longitude, accuracy) {
+    this.setPosition = function(latitude, longitude, accuracy, altitude) {
+        if (typeof latitude == "object") {
+            let pos = latitude;
+            latitude = pos.latitude;
+            longitude = pos.longitude;
+            accuracy = pos.accuracy;
+            altitude = pos.altitude;
+        }
         self.playerLatitude = latitude;
         self.playerLongitude = longitude;
         self.playerLocationAccuracy = accuracy || 0;
+        self.playerAltitude = altitude || 0;
     };
 
     /**
