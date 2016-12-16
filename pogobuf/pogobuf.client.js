@@ -52,8 +52,8 @@ function Client() {
      * @param {number} [altitude=0] - The player's altitude
      */
     this.setPosition = function(latitude, longitude, accuracy, altitude) {
-        if (typeof latitude == "object") {
-            let pos = latitude;
+        if (typeof latitude === 'object') {
+            const pos = latitude;
             latitude = pos.latitude;
             longitude = pos.longitude;
             accuracy = pos.accuracy;
