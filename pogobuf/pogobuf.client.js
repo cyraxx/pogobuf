@@ -46,7 +46,7 @@ function Client() {
      * Note that this does not actually update the player location on the server, it only sets
      * the location to be used in following API calls. To update the location on the server you
      * probably want to call {@link #updatePlayer}.
-     * @param {number} latitude - The player's latitude
+     * @param {number|object} latitude - The player's latitude, or an object containing all four parameters
      * @param {number} longitude - The player's longitude
      * @param {number} [accuracy=0] - The location accuracy in m
      * @param {number} [altitude=0] - The player's altitude
