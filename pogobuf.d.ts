@@ -120,10 +120,6 @@ declare namespace pogobuf {
             isDebugRequest: boolean
         ): Promise<POGOProtos.Networking.Responses.CheckChallengeResponse>;
 
-        checkCodenameAvailable(
-            codename: string
-        ): Promise<POGOProtos.Networking.Responses.CheckCodenameAvailableResponse>;
-
         claimCodename(
             codename: string
         ): Promise<POGOProtos.Networking.Responses.ClaimCodenameResponse>;
@@ -140,6 +136,9 @@ declare namespace pogobuf {
         ): Promise<POGOProtos.Networking.Responses.DiskEncounterResponse>;
 
         downloadItemTemplates(
+            paginate: boolean,
+            pageOffset: number,
+            pageTimestamp: number
         ): Promise<POGOProtos.Networking.Responses.DownloadItemTemplatesResponse>;
 
         downloadRemoteConfigVersion(
@@ -243,9 +242,6 @@ declare namespace pogobuf {
             playerName: string
         ): Promise<POGOProtos.Networking.Responses.GetPlayerProfileResponse>;
 
-        getSuggestedCodenames(
-        ): Promise<POGOProtos.Networking.Responses.GetSuggestedCodenamesResponse>;
-
         incenseEncounter(
             encounterID: string | number | Long,
             encounterLocation: string
@@ -254,6 +250,14 @@ declare namespace pogobuf {
         levelUpRewards(
             level: number
         ): Promise<POGOProtos.Networking.Responses.LevelUpRewardsResponse>;
+
+        listAvatarCustomizations(
+            avatarType: POGOProtos.Data.Player.PlayerAvatarType,
+            slots: POGOProtos.Enums.Slot[],
+            filters: POGOProtos.Enums.Filter[],
+            start: number,
+            limit: number
+        ): Promise<POGOProtos.Networking.Responses.ListAvatarCustomizationsReponse>;
 
         markTutorialComplete(
             tutorialsCompleted: POGOProtos.Enums.TutorialState[],
@@ -294,6 +298,10 @@ declare namespace pogobuf {
             eyes: number,
             backpack: number
         ): Promise<POGOProtos.Networking.Responses.SetAvatarResponse>;
+
+        setAvatarItemAsViewed(
+            avatarTemplateIDs: string[]
+        ): Promise<POGOProtos.Networking.Responses.SetAvatarItemAsViewedResponse>;
 
         setBuddyPokemon(
             pokemonID: string | number | Long
