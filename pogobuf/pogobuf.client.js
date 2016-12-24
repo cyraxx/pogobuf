@@ -242,9 +242,14 @@ function Client() {
         });
     };
 
-    this.downloadItemTemplates = function() {
+    this.downloadItemTemplates = function(paginate, pageOffset, pageTimestamp) {
         return self.callOrChain({
             type: RequestType.DOWNLOAD_ITEM_TEMPLATES,
+            message: new RequestMessages.DownloadItemTemplatesMessage({
+                paginate: paginate,
+                page_offset: pageOffset,
+                page_timestamp: pageTimestamp
+            }),
             responseType: Responses.DownloadItemTemplatesResponse
         });
     };
@@ -723,23 +728,6 @@ function Client() {
         });
     };
 
-    this.getSuggestedCodenames = function() {
-        return self.callOrChain({
-            type: RequestType.GET_SUGGESTED_CODENAMES,
-            responseType: Responses.GetSuggestedCodenamesResponse
-        });
-    };
-
-    this.checkCodenameAvailable = function(codename) {
-        return self.callOrChain({
-            type: RequestType.CHECK_CODENAME_AVAILABLE,
-            message: new RequestMessages.CheckCodenameAvailableMessage({
-                codename: codename
-            }),
-            responseType: Responses.CheckCodenameAvailableResponse
-        });
-    };
-
     this.claimCodename = function(codename) {
         return self.callOrChain({
             type: RequestType.CLAIM_CODENAME,
@@ -823,6 +811,30 @@ function Client() {
         return self.callOrChain({
             type: RequestType.SFIDA_ACTION_LOG,
             responseType: Responses.SfidaActionLogResponse
+        });
+    };
+
+    this.listAvatarCustomizations = function(avatarType, slots, filters, start, limit) {
+        return self.callOrChain({
+            type: RequestType.LIST_AVATAR_CUSTOMIZATIONS,
+            message: new RequestMessages.ListAvatarCustomizationsMessage({
+                avatar_type: avatarType,
+                slot: slots,
+                filters: filters,
+                start: start,
+                limit: limit
+            }),
+            responseType: Responses.ListAvatarCustomizationsResponse
+        });
+    };
+
+    this.setAvatarItemAsViewed = function(avatarTemplateIDs) {
+        return self.callOrChain({
+            type: RequestType.SET_AVATAR_ITEM_AS_VIEWED,
+            message: new RequestMessages.SetAvatarItemAsViewedMessage({
+                avatar_template_id: avatarTemplateIDs
+            }),
+            responseType: Responses.SetAvatarItemAsViewdResponse
         });
     };
 
