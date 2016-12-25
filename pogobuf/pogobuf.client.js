@@ -20,12 +20,14 @@ const DEFAULT_MAP_OBJECTS_DELAY = 5;
  * Pokémon Go RPC client.
  * @class Client
  * @memberof pogobuf
+ * @param {object} options - client options
  */
-function Client() {
+function Client(options) {
     if (!(this instanceof Client)) {
-        return new Client();
+        return new Client(options);
     }
     const self = this;
+    self.options = options;
 
     /**
      * PUBLIC METHODS
@@ -1162,6 +1164,9 @@ function Client() {
                                 return;
                             }
 
+                            if (options.includeReqTypeInResponse) {
+                                responseMessage.pogoBufRequest = requests[i].type;
+                            }
                             responses.push(responseMessage);
                         }
                     }
