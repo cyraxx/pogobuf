@@ -22,12 +22,11 @@ const DEFAULT_MAP_OBJECTS_DELAY = 5;
  * @memberof pogobuf
  * @param {object} options - client options
  */
-function Client(options) {
+function Client() {
     if (!(this instanceof Client)) {
-        return new Client(options);
+        return new Client();
     }
     const self = this;
-    self.options = options;
 
     /**
      * PUBLIC METHODS
@@ -125,6 +124,15 @@ function Client(options) {
 
         self.batchClear();
         return p;
+    };
+
+    /**
+     * If true, response objects will contain a pogoBufRequest field with the id of the
+     * associated request. Allows you to detect response when using batch mode.
+     * @param {bool} includeReqTypeInResponse - if true, include request id in response objects
+     */
+    this.setIncludeReqTypeInResponse = function(includeReqTypeInResponse) {
+        self.includeReqTypeInResponse = includeReqTypeInResponse;
     };
 
     /**
@@ -1164,7 +1172,7 @@ function Client(options) {
                                 return;
                             }
 
-                            if (options.includeReqTypeInResponse) {
+                            if (self.includeReqTypeInResponse) {
                                 responseMessage.pogoBufRequest = requests[i].type;
                             }
                             responses.push(responseMessage);
