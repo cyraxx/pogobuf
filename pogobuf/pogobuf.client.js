@@ -20,7 +20,6 @@ const DEFAULT_MAP_OBJECTS_DELAY = 5;
  * Pokémon Go RPC client.
  * @class Client
  * @memberof pogobuf
- * @param {object} options - client options
  */
 function Client() {
     if (!(this instanceof Client)) {
