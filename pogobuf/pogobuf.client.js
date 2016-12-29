@@ -73,7 +73,6 @@ function Client() {
     this.init = function(downloadSettings) {
         if (typeof downloadSettings === 'undefined') downloadSettings = true;
 
-        self.signatureBuilder = new pogoSignature.Builder({ protos: POGOProtos });
         self.lastMapObjectsCall = 0;
 
         /*
@@ -123,6 +122,24 @@ function Client() {
 
         self.batchClear();
         return p;
+    };
+
+    /**
+     * Set API version. 4500 means local hashing, upper version only
+     * works with hashing server.
+     * @param {string} version - api version (4500 or 5100)
+     */
+    this.setVersion = function(version) {
+        this.version = version;
+    };
+
+    /**
+     * Use hash server
+     * @param {string} key - key purchased from Pokefarmer guys
+     */
+    this.activateHashServer = function(key) {
+        this.useHashSever = true;
+        this.hashKey = key;
     };
 
     /**
@@ -988,6 +1005,13 @@ function Client() {
                 return;
             }
 
+            self.signatureBuilder = new pogoSignature.Builder({ protos: POGOProtos });
+            this.version = this.version || '4500';
+            self.signatureBuilder.version = '0.' + ((+this.version) / 100).toFixed(0);
+            if (this.useHashSever) {
+                const hashVersion = '1' + Math.floor((+this.version - 3000) / 100);
+                self.signatureBuilder.useHashingServer('hashing.pogodev.io', 80, this.hashKey, '1' + hashVersion);
+            }
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
             if (typeof self.signatureInfo === 'function') {
