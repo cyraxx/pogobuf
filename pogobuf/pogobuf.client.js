@@ -145,10 +145,10 @@ function Client() {
     /**
      * If true, response objects will contain a pogoBufRequest field with the id of the
      * associated request. Allows you to detect response when using batch mode.
-     * @param {bool} includeReqTypeInResponse - if true, include request id in response objects
+     * @param {bool} includeRequestTypeInResponse - if true, include request id in response objects
      */
-    this.setIncludeReqTypeInResponse = function(includeReqTypeInResponse) {
-        self.includeReqTypeInResponse = includeReqTypeInResponse;
+    this.setIncludeRequestTypeInResponse = function(includeRequestTypeInResponse) {
+        self.includeRequestTypeInResponse = includeRequestTypeInResponse;
     };
 
     /**
@@ -1195,7 +1195,7 @@ function Client() {
                                 return;
                             }
 
-                            if (self.includeReqTypeInResponse) {
+                            if (self.includeRequestTypeInResponse) {
                                 responseMessage.pogoBufRequest = requests[i].type;
                             }
                             responses.push(responseMessage);
