@@ -149,7 +149,7 @@ function Client() {
             return Promise.resolve();
         } else {
             // correct version is verified against available versions on the server
-            return request.getAsync('http://hashing.pogodev.io/api/hash/versions')
+            return request.getAsync(this.hashServerHost + 'api/hash/versions')
                 .then(response => {
                     const iosVersion = '1.' + (+this.version - 3000) / 100;
                     const versions = JSON.parse(response.body);
