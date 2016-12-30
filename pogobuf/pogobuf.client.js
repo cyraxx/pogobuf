@@ -85,20 +85,11 @@ function Client() {
         */
         self.endpoint = INITIAL_ENDPOINT;
 
-        // if hashserver is used, query available version to get the current one
-        return request.getAsync('http://hashing.pogodev.io/api/hash/versions')
-        .then(response => {
-            this.version = this.version || '4500';
-            const iosVersion = '1.' + (+this.version - 3000) / 100;
-            const versions = JSON.parse(response.body);
-            this.hashVersion = versions[iosVersion];
-        }).then(() => {
-            if (downloadSettings) {
-                return self.downloadSettings().then(self.processSettingsResponse);
-            } else {
-                return Promise.resolve(true);
-            }
-        });
+        if (downloadSettings) {
+            return self.downloadSettings().then(self.processSettingsResponse);
+        } else {
+            return Promise.resolve(true);
+        }
     };
 
     /**
@@ -147,10 +138,27 @@ function Client() {
     /**
      * Use hash server
      * @param {string} key - key purchased from Pokefarmer guys
+     * @return {Promise} - Promise when thing are set up
      */
     this.activateHashServer = function(key) {
         this.useHashSever = true;
         this.hashKey = key;
+
+        this.version = this.version || '4500';
+        if (this.hashVersion) {
+            return Promise.resolve();
+        } else {
+            // correct version is verified against available versions on the server
+            return request.getAsync('http://hashing.pogodev.io/api/hash/versions')
+                .then(response => {
+                    const iosVersion = '1.' + (+this.version - 3000) / 100;
+                    const versions = JSON.parse(response.body);
+                    this.hashVersion = versions[iosVersion];
+                    if (!this.hashVersion) {
+                        throw new Error('Unsupportd version for hashserver: ' + this.version + '/' + iosVersion);
+                    }
+                });
+        }
     };
 
     /**
@@ -894,6 +902,7 @@ function Client() {
     this.automaticLongConversionEnabled = true;
     this.rpcId = 0;
     this.signatureInfo = {};
+    this.hashServerHost = 'http://hashing.pogodev.io/';
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -1016,13 +1025,13 @@ function Client() {
                 return;
             }
 
-            self.signatureBuilder = new pogoSignature.Builder({ protos: POGOProtos });
-            self.signatureBuilder.version = '0.' + ((+this.version) / 100).toFixed(0);
+            this.version = this.version || '4500';
+            self.signatureBuilder = new pogoSignature.Builder({
+                protos: POGOProtos,
+                version: '0.' + ((+this.version) / 100).toFixed(0),
+            });
             if (this.useHashSever) {
-                // this.hashVersion = "api/v121/hash"
-                let version = this.hashVersion.substring(this.hashVersion.indexOf('v') + 1);
-                version = version.substring(0, version.indexOf('/'));
-                self.signatureBuilder.useHashingServer('hashing.pogodev.io', 80, this.hashKey, version);
+                self.signatureBuilder.useHashingServer(this.hashServerHost + this.hashVersion, this.hashKey);
             }
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             if (typeof self.signatureInfo === 'function') {
