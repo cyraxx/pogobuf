@@ -9,6 +9,8 @@ const EventEmitter = require('events').EventEmitter,
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js');
 
+Promise.promisifyAll(request);
+
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
@@ -83,11 +85,20 @@ function Client() {
         */
         self.endpoint = INITIAL_ENDPOINT;
 
-        if (downloadSettings) {
-            return self.downloadSettings().then(self.processSettingsResponse);
-        } else {
-            return Promise.resolve(true);
-        }
+        // if hashserver is used, query available version to get the current one
+        return request.getAsync('http://hashing.pogodev.io/api/hash/versions')
+        .then(response => {
+            this.version = this.version || '4500';
+            const iosVersion = '1.' + (+this.version - 3000) / 100;
+            const versions = JSON.parse(response.body);
+            this.hashVersion = versions[iosVersion];
+        }).then(() => {
+            if (downloadSettings) {
+                return self.downloadSettings().then(self.processSettingsResponse);
+            } else {
+                return Promise.resolve(true);
+            }
+        });
     };
 
     /**
@@ -1006,19 +1017,20 @@ function Client() {
             }
 
             self.signatureBuilder = new pogoSignature.Builder({ protos: POGOProtos });
-            this.version = this.version || '4500';
             self.signatureBuilder.version = '0.' + ((+this.version) / 100).toFixed(0);
             if (this.useHashSever) {
-                const hashVersion = '1' + Math.floor((+this.version - 3000) / 100);
-                self.signatureBuilder.useHashingServer('hashing.pogodev.io', 80, this.hashKey, '1' + hashVersion);
+                // this.hashVersion = "api/v121/hash"
+                let version = this.hashVersion.substring(this.hashVersion.indexOf('v') + 1);
+                version = version.substring(0, version.indexOf('/'));
+                self.signatureBuilder.useHashingServer('hashing.pogodev.io', 80, this.hashKey, version);
             }
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
-            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
             if (typeof self.signatureInfo === 'function') {
                 self.signatureBuilder.setFields(self.signatureInfo(envelope));
             } else if (self.signatureInfo) {
                 self.signatureBuilder.setFields(self.signatureInfo);
             }
+            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
                 if (err) {
