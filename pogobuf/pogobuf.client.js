@@ -126,6 +126,15 @@ function Client() {
     };
 
     /**
+     * If true, response objects will contain a pogoBufRequest field with the id of the
+     * associated request. Allows you to detect response when using batch mode.
+     * @param {bool} includeRequestTypeInResponse - if true, include request id in response objects
+     */
+    this.setIncludeRequestTypeInResponse = function(includeRequestTypeInResponse) {
+        self.includeRequestTypeInResponse = includeRequestTypeInResponse;
+    };
+
+    /**
      * Sets the maximum times to try RPC calls until they succeed (default is 5 tries).
      * Set to 1 to disable retry logic.
      * @param {integer} maxTries
@@ -1162,6 +1171,10 @@ function Client() {
                                 return;
                             }
 
+                            if (self.includeRequestTypeInResponse) {
+                                // eslint-disable-next-line no-underscore-dangle
+                                responseMessage._requestType = requests[i].type;
+                            }
                             responses.push(responseMessage);
                         }
                     }
