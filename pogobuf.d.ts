@@ -59,6 +59,14 @@ declare namespace pogobuf {
          */
         setAutomaticLongConversionEnabled(enable: boolean): void;
 
+
+        /**
+         * If true, response objects will contain a pogoBufRequest field with the id of the
+         * associated request. Allows you to detect response when using batch mode.
+         * @param {boolean} includeRequestTypeInResponse - if true, include request id in response objects
+         */
+        setIncludeRequestTypeInResponse(includeRequestTypeInResponse: boolean): void;
+
         /**
          * Enables or disables the built-in throttling of getMapObjects() calls based on the
          * minimum refresh setting received from the server. Enabled by default, disable if you

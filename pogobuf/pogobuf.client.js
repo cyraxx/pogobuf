@@ -1208,7 +1208,8 @@ function Client() {
                             }
 
                             if (self.includeRequestTypeInResponse) {
-                                responseMessage.pogoBufRequest = requests[i].type;
+                                // eslint-disable-next-line no-underscore-dangle
+                                responseMessage._requestType = requests[i].type;
                             }
                             responses.push(responseMessage);
                         }
