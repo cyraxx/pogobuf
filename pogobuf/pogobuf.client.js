@@ -77,6 +77,12 @@ function Client() {
 
         self.lastMapObjectsCall = 0;
 
+        this.version = this.version || '4500';
+        self.signatureBuilder = new pogoSignature.Builder({
+            protos: POGOProtos,
+            version: '0.' + ((+this.version) / 100).toFixed(0),
+        });
+
         /*
             The response to the first RPC call does not contain any response messages even though
             the envelope includes requests, technically it wouldn't be necessary to send the
@@ -1027,11 +1033,7 @@ function Client() {
                 return;
             }
 
-            this.version = this.version || '4500';
-            self.signatureBuilder = new pogoSignature.Builder({
-                protos: POGOProtos,
-                version: '0.' + ((+this.version) / 100).toFixed(0),
-            });
+            self.signatureBuilder.version = '0.' + ((+this.version) / 100).toFixed(0);
             if (this.useHashSever) {
                 let hashKey = this.hashKey;
                 if (Array.isArray(hashKey)) {
@@ -1049,8 +1051,13 @@ function Client() {
             self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
+                self.rateInfos = self.signatureBuilder.rateInfos;
                 if (err) {
-                    reject(new retry.StopError(err));
+                    if (err.startsWith('Request limited')) {
+                        reject(new Error(err));
+                    } else {
+                        reject(new retry.StopError(err));
+                    }
                     return;
                 }
 
