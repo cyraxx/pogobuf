@@ -137,7 +137,8 @@ function Client() {
 
     /**
      * Use hash server
-     * @param {string} key - key purchased from Pokefarmer guys
+     * @param {string|string[]} key - key purchased from Pokefarmer guys
+     *                                (can be an array of keys taken randomly)
      * @return {Promise} - Promise when thing are set up
      */
     this.activateHashServer = function(key) {
@@ -148,16 +149,16 @@ function Client() {
         if (this.hashVersion) {
             return Promise.resolve();
         } else {
-            // correct version is verified against available versions on the server
+            // version is verified against available versions on the server
             return request.getAsync(this.hashServerHost + 'api/hash/versions')
-                .then(response => {
-                    const iosVersion = '1.' + (+this.version - 3000) / 100;
-                    const versions = JSON.parse(response.body);
-                    this.hashVersion = versions[iosVersion];
-                    if (!this.hashVersion) {
-                        throw new Error('Unsupportd version for hashserver: ' + this.version + '/' + iosVersion);
-                    }
-                });
+                    .then(response => {
+                        const iosVersion = '1.' + (+this.version - 3000) / 100;
+                        const versions = JSON.parse(response.body);
+                        this.hashVersion = versions[iosVersion];
+                        if (!this.hashVersion) {
+                            throw new Error('Unsupportd version for hashserver: ' + this.version + '/' + iosVersion);
+                        }
+                    });
         }
     };
 
@@ -903,6 +904,7 @@ function Client() {
     this.rpcId = 0;
     this.signatureInfo = {};
     this.hashServerHost = 'http://hashing.pogodev.io/';
+    this.hashKeyIdx = 0;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -1031,7 +1033,12 @@ function Client() {
                 version: '0.' + ((+this.version) / 100).toFixed(0),
             });
             if (this.useHashSever) {
-                self.signatureBuilder.useHashingServer(this.hashServerHost + this.hashVersion, this.hashKey);
+                let hashKey = this.hashKey;
+                if (Array.isArray(hashKey)) {
+                    this.hashKeyIdx = (this.hashKeyIdx + 1) % this.hashKey.length;
+                    hashKey = this.hashKey[this.hashKeyIdx];
+                }
+                self.signatureBuilder.useHashingServer(this.hashServerHost + this.hashVersion, hashKey);
             }
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
             if (typeof self.signatureInfo === 'function') {
