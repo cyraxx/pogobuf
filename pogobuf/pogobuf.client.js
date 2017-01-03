@@ -1051,7 +1051,6 @@ function Client() {
 
         return retry(() => self.signatureBuilder.encryptAsync(envelope.requests)
                         .catch(err => {
-                            console.log('error in encryption');
                             if (err.name === 'HashServerError') {
                                 if (err.message === 'Request limited') {
                                     throw err;
