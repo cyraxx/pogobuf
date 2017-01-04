@@ -27,12 +27,12 @@ declare namespace pogobuf {
          * Note that this does not actually update the player location on the server,
          * it only sets the location to be used in following API calls.
          * To update the location on the server you probably want to call playerUpdate().
-         * @param {number} latitude The player's latitude
+         * @param {number|Object} latitude - The player's latitude, or an object with parameters
          * @param {number} longitude The player's longitude
          * @param {number} accuracy The location accuracy in m (optional) (default value is 0)
          * @param {number} altitude The player's altitude (optional) (default value is 0)
          */
-        setPosition(latitude: number, longitude: number, accuracy?: number, altitude?: number): void;
+        setPosition(latitude: number | Object, longitude: number, accuracy?: number, altitude?: number): void;
 
         /**
          * Performs client initialization and downloads needed settings from the API.
