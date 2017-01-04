@@ -1042,12 +1042,12 @@ function Client() {
             self.signatureBuilder.useHashingServer(this.hashServerHost + this.hashVersion, hashKey);
         }
         self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
+        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
         if (typeof self.signatureInfo === 'function') {
             self.signatureBuilder.setFields(self.signatureInfo(envelope));
         } else if (self.signatureInfo) {
             self.signatureBuilder.setFields(self.signatureInfo);
         }
-        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         return retry(() => self.signatureBuilder.encryptAsync(envelope.requests)
                         .catch(err => {
