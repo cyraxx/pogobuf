@@ -28,18 +28,18 @@
     "node": ">=4.0.0"
   },
   "dependencies": {
-    "bluebird": "^3.4.6",
-    "bluebird-retry": "^0.8.0",
+    "bluebird": "^3.4.7",
+    "bluebird-retry": "^0.10.1",
     "gpsoauthnode": "0.0.5",
     "long": "^3.2.0",
     "node-pogo-protos": "^2.4.0",
-    "node-pogo-signature": "^3.0.0",
+    "node-pogo-signature": "^4.0.0",
     "request": "^2.79.0",
     "s2-geometry": "^1.2.9"
   },
   "devDependencies": {
-    "eslint": "^3.1.1",
-    "eslint-config-airbnb-base": "^10.0.1",
+    "eslint": "^3.12.2",
+    "eslint-config-airbnb-base": "^11.0.0",
     "eslint-plugin-import": "^2.2.0"
   }
 }

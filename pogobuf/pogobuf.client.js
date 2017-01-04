@@ -9,6 +9,8 @@ const EventEmitter = require('events').EventEmitter,
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js');
 
+Promise.promisifyAll(request);
+
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
@@ -73,8 +75,13 @@ function Client() {
     this.init = function(downloadSettings) {
         if (typeof downloadSettings === 'undefined') downloadSettings = true;
 
-        self.signatureBuilder = new pogoSignature.Builder({ protos: POGOProtos });
         self.lastMapObjectsCall = 0;
+
+        this.version = this.version || '4500';
+        self.signatureBuilder = new pogoSignature.Builder({
+            protos: POGOProtos,
+            version: '0.' + ((+this.version) / 100).toFixed(0),
+        });
 
         /*
             The response to the first RPC call does not contain any response messages even though
@@ -123,6 +130,42 @@ function Client() {
 
         self.batchClear();
         return p;
+    };
+
+    /**
+     * Set API version. 4500 means local hashing, upper version only
+     * works with hashing server.
+     * @param {string} version - api version (4500 or 5100)
+     */
+    this.setVersion = function(version) {
+        this.version = version;
+    };
+
+    /**
+     * Use hash server
+     * @param {string|string[]} key - key purchased from Pokefarmer guys
+     *                                (can be an array of keys taken randomly)
+     * @return {Promise} - Promise when thing are set up
+     */
+    this.activateHashServer = function(key) {
+        this.useHashSever = true;
+        this.hashKey = key;
+
+        this.version = this.version || '4500';
+        if (this.hashVersion) {
+            return Promise.resolve();
+        } else {
+            // version is verified against available versions on the server
+            return request.getAsync(this.hashServerHost + 'api/hash/versions')
+                    .then(response => {
+                        const iosVersion = '1.' + (+this.version - 3000) / 100;
+                        const versions = JSON.parse(response.body);
+                        this.hashVersion = versions[iosVersion];
+                        if (!this.hashVersion) {
+                            throw new Error('Unsupportd version for hashserver: ' + this.version + '/' + iosVersion);
+                        }
+                    });
+        }
     };
 
     /**
@@ -866,6 +909,8 @@ function Client() {
     this.automaticLongConversionEnabled = true;
     this.rpcId = 0;
     this.signatureInfo = {};
+    this.hashServerHost = 'http://hashing.pogodev.io/';
+    this.hashKeyIdx = 0;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -988,17 +1033,31 @@ function Client() {
                 return;
             }
 
+            self.signatureBuilder.version = '0.' + ((+this.version) / 100).toFixed(0);
+            if (this.useHashSever) {
+                let hashKey = this.hashKey;
+                if (Array.isArray(hashKey)) {
+                    this.hashKeyIdx = (this.hashKeyIdx + 1) % this.hashKey.length;
+                    hashKey = this.hashKey[this.hashKeyIdx];
+                }
+                self.signatureBuilder.useHashingServer(this.hashServerHost + this.hashVersion, hashKey);
+            }
             self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
-            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
             if (typeof self.signatureInfo === 'function') {
                 self.signatureBuilder.setFields(self.signatureInfo(envelope));
             } else if (self.signatureInfo) {
                 self.signatureBuilder.setFields(self.signatureInfo);
             }
+            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
+                self.rateInfos = self.signatureBuilder.rateInfos;
                 if (err) {
-                    reject(new retry.StopError(err));
+                    if (err.startsWith('Request limited')) {
+                        reject(new Error(err));
+                    } else {
+                        reject(new retry.StopError(err));
+                    }
                     return;
                 }
 
