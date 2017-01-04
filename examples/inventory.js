@@ -12,14 +12,16 @@ const pogobuf = require('pogobuf'),
 const lat = 37.7876146,
     lng = -122.3884353;
 
-const login = new pogobuf.GoogleLogin(),
-    client = new pogobuf.Client();
+let client;
 
 // Login to Google and get a login token
-login.login('your-username@gmail.com', 'your-google-password')
+new pogobuf.GoogleLogin().login('your-username@gmail.com', 'your-google-password')
     .then(token => {
         // Initialize the client
-        client.setAuthInfo('google', token);
+        client = new pogobuf.Client({
+            authType: 'google',
+            authToken: token
+        });
         client.setPosition(lat, lng);
 
         // Uncomment the following if you want to see request/response information on the console
