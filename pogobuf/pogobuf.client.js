@@ -9,43 +9,62 @@ const EventEmitter = require('events').EventEmitter,
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js');
 
+Promise.promisifyAll(request);
+
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
-const DEFAULT_MAP_OBJECTS_DELAY = 5;
+
+// See pogobuf wiki for description of options
+const defaultOptions = {
+    authToken: '',
+    authType: 'ptc',
+    downloadSettings: true,
+    mapObjectsThrottling: true,
+    mapObjectsMinDelay: 5000,
+    proxy: null,
+    maxTries: 5,
+    automaticLongConversion: true,
+    version: 4500,
+    signatureInfo: {},
+    useHashingServer: false,
+    hashingServer: 'http://hashing.pogodev.io/',
+    hashingKey: null
+};
 
 /**
  * Pokémon Go RPC client.
  * @class Client
+ * @param {Object} [options] - Client options (see pogobuf wiki for documentation)
  * @memberof pogobuf
  */
-function Client() {
+function Client(options) {
     if (!(this instanceof Client)) {
-        return new Client();
+        return new Client(options);
     }
     const self = this;
 
-    /**
+    /*
      * PUBLIC METHODS
      */
 
-    /**
-     * Sets the authentication type and token (required before making API calls).
-     * @param {string} authType - Authentication provider type (ptc or google)
-     * @param {string} authToken - Authentication token received from authentication provider
-     */
-    this.setAuthInfo = function(authType, authToken) {
-        self.authType = authType;
-        self.authToken = authToken;
+     /**
+      * Sets the specified client option to the given value.
+      * Note that not all options support changes after client initialization.
+      * @param {string} option - Option name
+      * @param {string} value - Option value
+      */
+    this.setOption = function(option, value) {
+        self.options[option] = value;
     };
 
     /**
      * Sets the player's latitude and longitude.
      * Note that this does not actually update the player location on the server, it only sets
      * the location to be used in following API calls. To update the location on the server you
-     * probably want to call {@link #updatePlayer}.
+     * probably want to call {@link #playerUpdate}.
      * @param {number|object} latitude - The player's latitude, or an object with parameters
      * @param {number} longitude - The player's longitude
      * @param {number} [accuracy=0] - The location accuracy in m
@@ -66,15 +85,20 @@ function Client() {
     };
 
     /**
-     * Performs client initialization and downloads needed settings from the API.
-     * @param {boolean} [downloadSettings=true] - Set to false to disable API calls
+     * Performs client initialization and downloads needed settings from the API and hashing server.
+     * @param {boolean} [downloadSettings] - Deprecated, use downloadSettings option instead
      * @return {Promise} promise
      */
     this.init = function(downloadSettings) {
-        if (typeof downloadSettings === 'undefined') downloadSettings = true;
+        // For backwards compatibility only
+        if (typeof downloadSettings !== 'undefined') self.setOption('downloadSettings', downloadSettings);
 
-        self.signatureBuilder = new pogoSignature.Builder({ protos: POGOProtos });
         self.lastMapObjectsCall = 0;
+
+        self.signatureBuilder = new pogoSignature.Builder({
+            protos: POGOProtos,
+            version: '0.' + ((+self.options.version) / 100).toFixed(0),
+        });
 
         /*
             The response to the first RPC call does not contain any response messages even though
@@ -84,11 +108,17 @@ function Client() {
         */
         self.endpoint = INITIAL_ENDPOINT;
 
-        if (downloadSettings) {
-            return self.downloadSettings().then(self.processSettingsResponse);
-        } else {
-            return Promise.resolve(true);
+        let promise = Promise.resolve(true);
+
+        if (self.options.useHashingServer) {
+            promise = promise.then(self.initializeHashingServer);
         }
+
+        if (self.options.downloadSettings) {
+            promise = promise.then(() => self.downloadSettings()).then(self.processSettingsResponse);
+        }
+
+        return promise;
     };
 
     /**
@@ -123,74 +153,6 @@ function Client() {
 
         self.batchClear();
         return p;
-    };
-
-    /**
-     * Sets the maximum times to try RPC calls until they succeed (default is 5 tries).
-     * Set to 1 to disable retry logic.
-     * @param {integer} maxTries
-     */
-    this.setMaxTries = function(maxTries) {
-        self.maxTries = maxTries;
-    };
-
-    /**
-     * Sets a proxy address to use for the HTTPS RPC requests.
-     * @param {string} proxy
-     */
-    this.setProxy = function(proxy) {
-        self.proxy = proxy;
-    };
-
-    /**
-     * Enables or disables the built-in throttling of getMapObjects() calls based on the
-     * minimum refresh setting received from the server. Enabled by default, disable if you
-     * want to manage your own throttling.
-     * @param {boolean} enable
-     */
-    this.setMapObjectsThrottlingEnabled = function(enable) {
-        self.mapObjectsThrottlingEnabled = enable;
-    };
-
-    /**
-     * Sets additional fields for the envelope signature, such as device_info.
-     * Accepts an object of fields that go into POGOProtos.Networking.Envelopes.Signature,
-     * or a callback function that will be called for every envelope with the envelope
-     * as its single parameter and should return such an object.
-     * @param {object|function} info
-     */
-    this.setSignatureInfo = function(info) {
-        self.signatureInfo = info;
-    };
-
-    /**
-     * Sets a callback to be called for any envelope or request just before it is sent to
-     * the server (mostly for debugging purposes).
-     * @deprecated Use the raw-request event instead
-     * @param {function} callback - function to call on requests
-     */
-    this.setRequestCallback = function(callback) {
-        self.on('raw-request', callback);
-    };
-
-    /**
-     * Sets a callback to be called for any envelope or response just after it has been
-     * received from the server (mostly for debugging purposes).
-     * @deprecated Use the raw-response event instead
-     * @param {function} callback - function to call on responses
-     */
-    this.setResponseCallback = function(callback) {
-        self.on('raw-response', callback);
-    };
-
-    /**
-     * Enables or disables automatic conversion of Long.js
-     * to primitive types in API response objects.
-     * @param {boolean} enable
-     */
-    this.setAutomaticLongConversionEnabled = function(enable) {
-        if (typeof enable !== 'boolean') return;
-        self.automaticLongConversionEnabled = enable;
     };
 
     /*
@@ -851,12 +813,10 @@ function Client() {
         encoding: null
     });
 
-    this.maxTries = 5;
-    this.mapObjectsThrottlingEnabled = true;
-    this.mapObjectsMinDelay = DEFAULT_MAP_OBJECTS_DELAY * 1000;
-    this.automaticLongConversionEnabled = true;
+    this.options = Object.assign({}, defaultOptions, options || {});
+    this.authTicket = null;
     this.rpcId = 0;
-    this.signatureInfo = {};
+    this.lastHashingKeyIndex = 0;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -915,13 +875,13 @@ function Client() {
 
         if (self.authTicket) {
             envelopeData.auth_ticket = self.authTicket;
-        } else if (!self.authType || !self.authToken) {
+        } else if (!self.options.authType || !self.options.authToken) {
             throw Error('No auth info provided');
         } else {
             envelopeData.auth_info = {
-                provider: self.authType,
+                provider: self.options.authType,
                 token: {
-                    contents: self.authToken,
+                    contents: self.options.authToken,
                     unknown2: 59
                 }
             };
@@ -979,17 +939,33 @@ function Client() {
                 return;
             }
 
-            self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
-            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
-            if (typeof self.signatureInfo === 'function') {
-                self.signatureBuilder.setFields(self.signatureInfo(envelope));
-            } else if (self.signatureInfo) {
-                self.signatureBuilder.setFields(self.signatureInfo);
+            if (self.options.useHashingServer) {
+                let key = self.options.hashingKey;
+                if (Array.isArray(key)) {
+                    key = key[self.lastHashingKeyIndex];
+                    self.lastHashingKeyIndex = (self.lastHashingKeyIndex + 1) % self.options.hashingKey.length;
+                }
+
+                self.signatureBuilder.useHashingServer(self.options.hashingServer + self.hashingVersion, key);
             }
+
+            self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
+
+            if (typeof self.options.signatureInfo === 'function') {
+                self.signatureBuilder.setFields(self.options.signatureInfo(envelope));
+            } else if (self.options.signatureInfo) {
+                self.signatureBuilder.setFields(self.options.signatureInfo);
+            }
+
+            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
             self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
                 if (err) {
-                    reject(new retry.StopError(err));
+                    if (err.startsWith('Request limited')) {
+                        reject(new Error(err));
+                    } else {
+                        reject(new retry.StopError(err));
+                    }
                     return;
                 }
 
@@ -1019,21 +995,21 @@ function Client() {
         // since the last call has passed
         if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
             var now = new Date().getTime(),
-                delayNeeded = self.lastMapObjectsCall + self.mapObjectsMinDelay - now;
+                delayNeeded = self.lastMapObjectsCall + self.options.mapObjectsMinDelay - now;
 
-            if (delayNeeded > 0 && self.mapObjectsThrottlingEnabled) {
+            if (delayNeeded > 0 && self.options.mapObjectsThrottling) {
                 return Promise.delay(delayNeeded).then(() => self.callRPC(requests, envelope));
             }
 
             self.lastMapObjectsCall = now;
         }
 
-        if (self.maxTries <= 1) return self.tryCallRPC(requests, envelope);
+        if (self.options.maxTries <= 1) return self.tryCallRPC(requests, envelope);
 
         return retry(() => self.tryCallRPC(requests, envelope), {
             interval: 300,
             backoff: 2,
-            max_tries: self.maxTries
+            max_tries: self.options.maxTries
         });
     };
 
@@ -1051,7 +1027,7 @@ function Client() {
                 self.request({
                     method: 'POST',
                     url: self.endpoint,
-                    proxy: self.proxy,
+                    proxy: self.options.proxy,
                     body: signedEnvelope.toBuffer()
                 }, (err, response, body) => {
                     if (err) {
@@ -1162,6 +1138,10 @@ function Client() {
                                 return;
                             }
 
+                            if (self.options.includeRequestTypeInResponse) {
+                                // eslint-disable-next-line no-underscore-dangle
+                                responseMessage._requestType = requests[i].type;
+                            }
                             responses.push(responseMessage);
                         }
                     }
@@ -1178,7 +1158,7 @@ function Client() {
                         }))
                     });
 
-                    if (self.automaticLongConversionEnabled) {
+                    if (self.options.automaticLongConversion) {
                         responses = Utils.convertLongs(responses);
                     }
 
@@ -1203,10 +1183,128 @@ function Client() {
             settingsResponse.settings.map_settings &&
             settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
         ) {
-            self.mapObjectsMinDelay =
-                settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000;
+            self.setOption('mapObjectsMinDelay',
+                settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000);
         }
         return settingsResponse;
+    };
+
+    /**
+     * Makes an initial call to the hashing server to verify API version.
+     * @private
+     * @return {Promise}
+     */
+    this.initializeHashingServer = function() {
+        if (!self.options.hashingServer) throw new Error('Hashing server enabled without host');
+        if (!self.options.hashingKey) throw new Error('Hashing server enabled without key');
+
+        if (self.options.hashingServer.slice(-1) !== '/') {
+            self.setOption('hashingServer', self.options.hashingServer + '/');
+        }
+
+        return request.getAsync(self.options.hashingServer + 'api/hash/versions').then(response => {
+            const versions = JSON.parse(response.body);
+            if (!versions) throw new Error('Invalid initial response from hashing server');
+
+            const iosVersion = '1.' + (+self.options.version - 3000) / 100;
+            self.hashingVersion = versions[iosVersion];
+
+            if (!self.hashingVersion) {
+                throw new Error('Unsupported version for hashserver: ' + self.options.version + '/' + iosVersion);
+            }
+
+            return true;
+        });
+    };
+
+    /*
+     * DEPRECATED METHODS
+     */
+
+    /**
+     * Sets the authType and authToken options.
+     * @deprecated Use options object or setOption() instead
+     * @param {string} authType
+     * @param {string} authToken
+     */
+    this.setAuthInfo = function(authType, authToken) {
+        self.setOption('authType', authType);
+        self.setOption('authToken', authToken);
+    };
+
+    /**
+     * Sets the includeRequestTypeInResponse option.
+     * @deprecated Use options object or setOption() instead
+     * @param {bool} includeRequestTypeInResponse
+     */
+    this.setIncludeRequestTypeInResponse = function(includeRequestTypeInResponse) {
+        self.setOption('includeRequestTypeInResponse', includeRequestTypeInResponse);
+    };
+
+    /**
+     * Sets the maxTries option.
+     * @deprecated Use options object or setOption() instead
+     * @param {integer} maxTries
+     */
+    this.setMaxTries = function(maxTries) {
+        self.setOption('maxTries', maxTries);
+    };
+
+    /**
+     * Sets the proxy option.
+     * @deprecated Use options object or setOption() instead
+     * @param {string} proxy
+     */
+    this.setProxy = function(proxy) {
+        self.setOption('proxy', proxy);
+    };
+
+    /**
+     * Sets the mapObjectsThrottling option.
+     * @deprecated Use options object or setOption() instead
+     * @param {boolean} enable
+     */
+    this.setMapObjectsThrottlingEnabled = function(enable) {
+        self.setOption('mapObjectsThrottling', enable);
+    };
+
+    /**
+     * Sets the signatureInfo option.
+     * @deprecated Use options object or setOption() instead
+     * @param {object|function} info
+     */
+    this.setSignatureInfo = function(info) {
+        self.setOption('signatureInfo', info);
+    };
+
+    /**
+     * Sets a callback to be called for any envelope or request just before it is sent to
+     * the server (mostly for debugging purposes).
+     * @deprecated Use the raw-request event instead
+     * @param {function} callback - function to call on requests
+     */
+    this.setRequestCallback = function(callback) {
+        self.on('raw-request', callback);
+    };
+
+    /**
+     * Sets a callback to be called for any envelope or response just after it has been
+     * received from the server (mostly for debugging purposes).
+     * @deprecated Use the raw-response event instead
+     * @param {function} callback - function to call on responses
+     */
+    this.setResponseCallback = function(callback) {
+        self.on('raw-response', callback);
+    };
+
+    /**
+     * Sets the automaticLongConversion option.
+     * @deprecated Use options object or setOption() instead
+     * @param {boolean} enable
+     */
+    this.setAutomaticLongConversionEnabled = function(enable) {
+        if (typeof enable !== 'boolean') return;
+        self.setOption('automaticLongConversion', enable);
     };
 }
 
