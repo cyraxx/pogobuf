@@ -74,6 +74,7 @@ module.exports = {
 
         var ret = {
             pokemon: [],
+            removed_pokemon: [],
             items: [],
             pokedex: [],
             player: null,
@@ -87,40 +88,45 @@ module.exports = {
         };
 
         inventory.inventory_delta.inventory_items.forEach(item => {
-            var itemdata = item.inventory_item_data;
-            if (itemdata.pokemon_data) {
-                ret.pokemon.push(itemdata.pokemon_data);
+            if (item.inventory_item_data) {
+                const itemdata = item.inventory_item_data;
+                if (itemdata.pokemon_data) {
+                    ret.pokemon.push(itemdata.pokemon_data);
+                }
+                if (itemdata.item) {
+                    ret.items.push(itemdata.item);
+                }
+                if (itemdata.pokedex_entry) {
+                    ret.pokedex.push(itemdata.pokedex_entry);
+                }
+                if (itemdata.player_stats) {
+                    ret.player = itemdata.player_stats;
+                }
+                if (itemdata.player_currency) {
+                    ret.currency.push(itemdata.player_currency);
+                }
+                if (itemdata.player_camera) {
+                    ret.camera = itemdata.player_camera;
+                }
+                if (itemdata.inventory_upgrades) {
+                    ret.inventory_upgrades.push(itemdata.inventory_upgrades);
+                }
+                if (itemdata.applied_items) {
+                    ret.applied_items.push(itemdata.applied_items);
+                }
+                if (itemdata.egg_incubators) {
+                    const incubators = itemdata.egg_incubators.egg_incubator || [];
+                    ret.egg_incubators = ret.egg_incubators.concat(incubators);
+                }
+                if (itemdata.candy) {
+                    ret.candies.push(itemdata.candy);
+                }
+                if (itemdata.quest) {
+                    ret.quests.push(itemdata.quest);
+                }
             }
-            if (itemdata.item) {
-                ret.items.push(itemdata.item);
-            }
-            if (itemdata.pokedex_entry) {
-                ret.pokedex.push(itemdata.pokedex_entry);
-            }
-            if (itemdata.player_stats) {
-                ret.player = itemdata.player_stats;
-            }
-            if (itemdata.player_currency) {
-                ret.currency.push(itemdata.player_currency);
-            }
-            if (itemdata.player_camera) {
-                ret.camera = itemdata.player_camera;
-            }
-            if (itemdata.inventory_upgrades) {
-                ret.inventory_upgrades.push(itemdata.inventory_upgrades);
-            }
-            if (itemdata.applied_items) {
-                ret.applied_items.push(itemdata.applied_items);
-            }
-            if (itemdata.egg_incubators) {
-                const incubators = itemdata.egg_incubators.egg_incubator || [];
-                ret.egg_incubators = ret.egg_incubators.concat(incubators);
-            }
-            if (itemdata.candy) {
-                ret.candies.push(itemdata.candy);
-            }
-            if (itemdata.quest) {
-                ret.quests.push(itemdata.quest);
+            if (item.deleted_item && item.deleted_item.pokemon_id) {
+                ret.removed_pokemon.push(item.deleted_item.pokemon_id);
             }
         });
 

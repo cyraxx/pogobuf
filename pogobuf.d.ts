@@ -383,6 +383,7 @@ declare namespace pogobuf {
 
         interface Inventory {
             pokemon: POGOProtos.Data.PokemonData[],
+            removed_pokemon: number[],
             items: POGOProtos.Inventory.Item.ItemData[],
             pokedex: POGOProtos.Data.PokedexEntry[],
             player: POGOProtos.Data.Player.PlayerStats,
