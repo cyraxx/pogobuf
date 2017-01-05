@@ -99,7 +99,8 @@ function Client(options) {
             protos: POGOProtos,
             version: '0.' + ((+self.options.version) / 100).toFixed(0),
         });
-        self.signatureBuilder.encryptAsync = Promise.promisify(self.signatureBuilder.encrypt, { context: self.signatureBuilder });
+        self.signatureBuilder.encryptAsync = Promise.promisify(self.signatureBuilder.encrypt,
+                                                                { context: self.signatureBuilder });
 
         /*
             The response to the first RPC call does not contain any response messages even though
