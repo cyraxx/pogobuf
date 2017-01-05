@@ -9,33 +9,35 @@ declare namespace pogobuf {
      * Pokémon Go RPC client.
      */
     export class Client {
-        playerLatitude: number;
-        playerLongitude: number;
-        playerLocationAccuracy: number;
-
         /**
-         * Sets the authentication type and token (required before making API calls).
-         * @param {string} authType Authentication provider type (ptc or google)
-         * @param {string} authToken Authentication token received from authentication provider
+         * @param {Object} options Client options (see pogobuf wiki for documentation)
          */
-        setAuthInfo(authType: string, authToken: string): void;
+        constructor(options?: Object);
+
+         /**
+          * Sets the specified client option to the given value.
+          * Note that not all options support changes after client initialization.
+          * @param {string} option Option name
+          * @param {string} value Option value
+          */
+        setOption(option: string, value: any): void;
 
         /**
          * Sets the player's latitude and longitude.
          * Note that this does not actually update the player location on the server,
          * it only sets the location to be used in following API calls.
          * To update the location on the server you probably want to call playerUpdate().
-         * @param {number} latitude The player's latitude
+         * @param {number|Object} latitude - The player's latitude, or an object with parameters
          * @param {number} longitude The player's longitude
          * @param {number} accuracy The location accuracy in m (optional) (default value is 0)
+         * @param {number} altitude The player's altitude (optional) (default value is 0)
          */
-        setPosition(latitude: number, longitude: number, accuracy?: number): void;
+        setPosition(latitude: number | Object, longitude: number, accuracy?: number, altitude?: number): void;
 
         /**
          * Performs client initialization and downloads needed settings from the API.
-         * @param {boolean} downloadSettings Set to false to disable API calls
          */
-        init(downloadSettings?: boolean): Promise<[POGOProtos.Networking.Responses.DownloadSettingsResponse]>;
+        init(): Promise<any>;
 
         /**
          * Sets batch mode. All further API requests will be held and executed in one RPC call when batchCall() is called.
@@ -51,51 +53,6 @@ declare namespace pogobuf {
          * Executes any batched requests.
          */
         batchCall(): Promise<any>;
-
-        /**
-         * Enables or disables automatic conversion of Long.js
-         * to primitive types in API response objects.
-         * @param {boolean} enable
-         */
-        setAutomaticLongConversionEnabled(enable: boolean): void;
-
-
-        /**
-         * If true, response objects will contain a pogoBufRequest field with the id of the
-         * associated request. Allows you to detect response when using batch mode.
-         * @param {boolean} includeRequestTypeInResponse - if true, include request id in response objects
-         */
-        setIncludeRequestTypeInResponse(includeRequestTypeInResponse: boolean): void;
-
-        /**
-         * Enables or disables the built-in throttling of getMapObjects() calls based on the
-         * minimum refresh setting received from the server. Enabled by default, disable if you
-         * want to manage your own throttling.
-         * @param {boolean} enable
-         */
-        setMapObjectsThrottlingEnabled(enable: boolean): void;
-
-        /**
-         * Sets the maximum times to try RPC calls until they succeed (default is 5 tries).
-         * Set to 1 to disable retry logic.
-         * @param {number} maxTries
-         */
-        setMaxTries(maxTries: number): void;
-
-        /**
-         * Sets a proxy address to use for the HTTPS RPC requests.
-         * @param {string} proxy
-         */
-        setProxy(proxy: string): void;
-
-        /**
-         * Sets additional fields for the envelope signature, such as device_info.
-         * Accepts an object of fields that go into POGOProtos.Networking.Envelopes.Signature,
-         * or a callback function that will be called for every envelope with the envelope
-         * as its single parameter and should return such an object.
-         * @param {object|function} info
-         */
-        setSignatureInfo(info: Object | Function): void;
 
         // Pokémon Go API methods
 
@@ -292,7 +249,7 @@ declare namespace pogobuf {
         ): Promise<POGOProtos.Networking.Responses.RecycleInventoryItemResponse>;
 
         releasePokemon(
-            pokemonID: string | number | Long
+            pokemonIDs: string | number | Long | string[] | number[] | Long[]
         ): Promise<POGOProtos.Networking.Responses.ReleasePokemonResponse>;
 
         setAvatar(
@@ -426,6 +383,7 @@ declare namespace pogobuf {
 
         interface Inventory {
             pokemon: POGOProtos.Data.PokemonData[],
+            removed_pokemon: number[],
             items: POGOProtos.Inventory.Item.ItemData[],
             pokedex: POGOProtos.Data.PokedexEntry[],
             player: POGOProtos.Data.Player.PlayerStats,

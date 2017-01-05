@@ -18,16 +18,14 @@ const pogobuf = require('pogobuf'),
     POGOProtos = require('node-pogo-protos'),
     nodeGeocoder = require('node-geocoder');
 
-var login = new pogobuf.PTCLogin(),
-    client = new pogobuf.Client(),
-    geocoder = nodeGeocoder(),
+let client,
     lat,
     lng;
 
 // Get latitude and longitude from geocoder
 // Note: To avoid getting softbanned, change the address to one that is close to where you
 // last used your account
-geocoder.geocode('2 Bryant St, San Francisco')
+nodeGeocoder.geocode('2 Bryant St, San Francisco')
     .then(location => {
         if (!location.length) {
             throw Error('No location found');
@@ -36,11 +34,14 @@ geocoder.geocode('2 Bryant St, San Francisco')
         lng = location[0].longitude;
 
         // Login to PTC and get a login token
-        return login.login('your-ptc-username', 'your-ptc-password');
+        return new pogobuf.PTCLogin().login('your-ptc-username', 'your-ptc-password');
     })
     .then(token => {
         // Initialize the client
-        client.setAuthInfo('ptc', token);
+        client = new pogobuf.Client({
+            authType: 'ptc',
+            authToken: token
+        });
         client.setPosition(lat, lng);
 
         // Uncomment the following if you want to see request/response information on the console
@@ -52,7 +53,7 @@ geocoder.geocode('2 Bryant St, San Francisco')
     })
     .then(() => {
         // Retrieve all map objects in the surrounding area
-        var cellIDs = pogobuf.Utils.getCellIDs(lat, lng);
+        const cellIDs = pogobuf.Utils.getCellIDs(lat, lng);
         return client.getMapObjects(cellIDs, Array(cellIDs.length).fill(0));
     })
     .then(mapObjects => {
@@ -70,13 +71,13 @@ geocoder.geocode('2 Bryant St, San Francisco')
     .then(gyms => {
         // Display gym information
         gyms.forEach(gym => {
-            var fortData = gym.gym_state.fort_data,
+            const fortData = gym.gym_state.fort_data,
                 memberships = gym.gym_state.memberships;
 
             console.log(gym.name);
             console.log('-'.repeat(gym.name.length));
 
-            var team = 'Owned by team: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.TeamColor,
+            let team = 'Owned by team: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.TeamColor,
                 fortData.owned_by_team);
             if (fortData.is_in_battle) team += ' [IN BATTLE]';
             console.log(team);
@@ -84,7 +85,7 @@ geocoder.geocode('2 Bryant St, San Francisco')
             console.log('Points: ' + fortData.gym_points);
 
             if (memberships && memberships.length) {
-                var highest = memberships[memberships.length - 1];
+                const highest = memberships[memberships.length - 1];
 
                 console.log('Highest Pokémon: ' + pogobuf.Utils.getEnumKeyByValue(POGOProtos.Enums.PokemonId,
                     highest.pokemon_data.pokemon_id) + ', ' + highest.pokemon_data.cp + ' CP');
