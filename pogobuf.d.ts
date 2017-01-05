@@ -249,7 +249,7 @@ declare namespace pogobuf {
         ): Promise<POGOProtos.Networking.Responses.RecycleInventoryItemResponse>;
 
         releasePokemon(
-            pokemonID: string | number | Long
+            pokemonIDs: string | number | Long | string[] | number[] | Long[]
         ): Promise<POGOProtos.Networking.Responses.ReleasePokemonResponse>;
 
         setAvatar(
@@ -383,6 +383,7 @@ declare namespace pogobuf {
 
         interface Inventory {
             pokemon: POGOProtos.Data.PokemonData[],
+            removed_pokemon: number[],
             items: POGOProtos.Inventory.Item.ItemData[],
             pokedex: POGOProtos.Data.PokedexEntry[],
             player: POGOProtos.Data.Player.PlayerStats,
