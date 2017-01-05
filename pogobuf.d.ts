@@ -249,7 +249,7 @@ declare namespace pogobuf {
         ): Promise<POGOProtos.Networking.Responses.RecycleInventoryItemResponse>;
 
         releasePokemon(
-            pokemonID: string | number | Long
+            pokemonIDs: string | number | Long | string[] | number[] | Long[]
         ): Promise<POGOProtos.Networking.Responses.ReleasePokemonResponse>;
 
         setAvatar(

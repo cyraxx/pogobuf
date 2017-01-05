@@ -336,11 +336,14 @@ function Client(options) {
         });
     };
 
-    this.releasePokemon = function(pokemonID) {
+    this.releasePokemon = function(pokemonIDs) {
+        if (!Array.isArray(pokemonIDs)) pokemonIDs = [pokemonIDs];
+
         return self.callOrChain({
             type: RequestType.RELEASE_POKEMON,
             message: new RequestMessages.ReleasePokemonMessage({
-                pokemon_id: pokemonID
+                pokemon_id: pokemonIDs.length === 1 ? pokemonIDs[0] : null,
+                pokemon_ids: pokemonIDs.length > 1 ? pokemonIDs : null
             }),
             responseType: Responses.ReleasePokemonResponse
         });
