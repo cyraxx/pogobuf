@@ -27,6 +27,7 @@ const defaultOptions = {
     proxy: null,
     maxTries: 5,
     automaticLongConversion: true,
+    includeRequestTypeInResponse: false,
     version: 4500,
     signatureInfo: {},
     useHashingServer: false,

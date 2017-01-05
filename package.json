@@ -1,6 +1,6 @@
 {
   "name": "pogobuf",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Pokémon Go Client Library",
   "main": "pogobuf/pogobuf.js",
   "typings": "./pogobuf.d.ts",

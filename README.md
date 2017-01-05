@@ -7,7 +7,7 @@
 
 ## Features
 * Implements all known Pokémon Go API calls
-* Includes request signing (aka Unknown6) support
+* Includes native request signing (up to API version 0.45) and [hashing server support](https://github.com/cyraxx/pogobuf/wiki/Using-a-hashing-server) (API version 0.51 and up)
 * Uses ES6 Promises and [Bluebird](https://github.com/petkaantonov/bluebird/)
 * Includes [Pokémon Trainer Club](https://www.pokemon.com/en/pokemon-trainer-club) and Google login clients
 * Optional batch mode to group several requests in one RPC call
