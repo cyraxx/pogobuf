@@ -33,7 +33,7 @@ function GoogleLogin() {
     this.login = function(username, password) {
         return self.getMasterToken(username, password)
             .then(loginData => self.getToken(username, loginData))
-            .then(authData => authData.auth);
+            .then(authData => authData.Auth);
     };
 
     /**
