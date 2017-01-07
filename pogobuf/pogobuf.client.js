@@ -343,8 +343,8 @@ function Client(options) {
         return self.callOrChain({
             type: RequestType.RELEASE_POKEMON,
             message: new RequestMessages.ReleasePokemonMessage({
-                pokemon_id: pokemonIDs.length === 1 ? pokemonIDs[0] : null,
-                pokemon_ids: pokemonIDs.length > 1 ? pokemonIDs : null
+                pokemon_id: pokemonIDs.length === 1 ? pokemonIDs[0] : 0,
+                pokemon_ids: pokemonIDs.length > 1 ? pokemonIDs : []
             }),
             responseType: Responses.ReleasePokemonResponse
         });
