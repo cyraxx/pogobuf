@@ -96,9 +96,15 @@ function Client(options) {
 
         self.lastMapObjectsCall = 0;
 
+        // convert app version (5100) to client version (0.51)
+        let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
+        if ((+self.options.version % 100) !== 0) {
+            signatureVersion += '.' + (+self.options.version % 100);
+        }
+
         self.signatureBuilder = new pogoSignature.Builder({
             protos: POGOProtos,
-            version: '0.' + ((+self.options.version) / 100).toFixed(0),
+            version: signatureVersion,
         });
         self.signatureBuilder.encryptAsync = Promise.promisify(self.signatureBuilder.encrypt,
                                                                 { context: self.signatureBuilder });
@@ -1224,7 +1230,12 @@ function Client(options) {
             const versions = JSON.parse(response.body);
             if (!versions) throw new Error('Invalid initial response from hashing server');
 
-            const iosVersion = '1.' + (+self.options.version - 3000) / 100;
+
+            let iosVersion = '1.' + ((+self.options.version - 3000) / 100).toFixed(0);
+            if ((+self.options.version % 100) !== 0) {
+                iosVersion += '.' + (+self.options.version % 100);
+            }
+
             self.hashingVersion = versions[iosVersion];
 
             if (!self.hashingVersion) {
