@@ -944,6 +944,12 @@ function Client(options) {
             }
         }
 
+        if (requests.some(r => r.type === RequestType.GET_PLAYER || r.type === RequestType.GET_MAP_OBJECTS)) {
+            envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
+                type: 8,
+            }));
+        }
+
         if (!envelope.auth_ticket) {
             // Can't sign before we have received an auth ticket
             return Promise.resolve(envelope);
