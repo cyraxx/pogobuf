@@ -829,6 +829,7 @@ function Client(options) {
     this.authTicket = null;
     this.rpcId = 0;
     this.lastHashingKeyIndex = 0;
+    this.firstGetMapObjects = true;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -928,6 +929,33 @@ function Client(options) {
     };
 
     /**
+     * Add the mysterious platform_request type 8 on request
+     * @param {Object[]} requests - Array of requests to build
+     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to modify
+     */
+    this.maybeAddPlatformRequest8 = function(requests, envelope) {
+        let addIt = false;
+        if ((requests.length === 1 && requests[0].type === RequestType.GET_PLAYER)) {
+            // always in firsdt get_player
+            addIt = true;
+        } else if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
+            if (this.firstGetMapObjects) {
+                // not on first gmo
+                this.firstGetMapObjects = false;
+            } else {
+                // on all others?
+                addIt = true;
+            }
+        }
+
+        if (addIt) {
+            envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
+                type: 8,
+            }));
+        }
+    }
+
+    /**
      * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
      * or adds the signature to an existing envelope.
      * @private
@@ -944,12 +972,7 @@ function Client(options) {
             }
         }
 
-        if ((requests.length === 1 && requests[0].type === RequestType.GET_PLAYER) ||
-            requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
-            envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
-                type: 8,
-            }));
-        }
+        this.maybeAddPlatformRequest8(requests, envelope);
 
         if (!envelope.auth_ticket) {
             // Can't sign before we have received an auth ticket
