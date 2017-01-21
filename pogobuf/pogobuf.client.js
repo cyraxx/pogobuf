@@ -944,7 +944,8 @@ function Client(options) {
             }
         }
 
-        if (requests.some(r => r.type === RequestType.GET_PLAYER || r.type === RequestType.GET_MAP_OBJECTS)) {
+        if ((requests.length === 1 && requests[0].type === RequestType.GET_PLAYER) ||
+            requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
             envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
                 type: 8,
             }));
