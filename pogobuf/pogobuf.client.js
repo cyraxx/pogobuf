@@ -96,10 +96,18 @@ function Client(options) {
 
         self.lastMapObjectsCall = 0;
 
+        // convert app version (5100) to client version (0.51)
+        let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
+        if ((+self.options.version % 100) !== 0) {
+            signatureVersion += '.' + (+self.options.version % 100);
+        }
+
         self.signatureBuilder = new pogoSignature.Builder({
             protos: POGOProtos,
-            version: '0.' + ((+self.options.version) / 100).toFixed(0),
+            version: signatureVersion,
         });
+        self.signatureBuilder.encryptAsync = Promise.promisify(self.signatureBuilder.encrypt,
+                                                                { context: self.signatureBuilder });
 
         /*
             The response to the first RPC call does not contain any response messages even though
@@ -821,6 +829,7 @@ function Client(options) {
     this.authTicket = null;
     this.rpcId = 0;
     this.lastHashingKeyIndex = 0;
+    this.firstGetMapObjects = true;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -920,6 +929,33 @@ function Client(options) {
     };
 
     /**
+     * Add the mysterious platform_request type 8 on request
+     * @param {Object[]} requests - Array of requests to build
+     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to modify
+     */
+    this.maybeAddPlatformRequest8 = function(requests, envelope) {
+        let addIt = false;
+        if ((requests.length === 1 && requests[0].type === RequestType.GET_PLAYER)) {
+            // always in firsdt get_player
+            addIt = true;
+        } else if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
+            if (this.firstGetMapObjects) {
+                // not on first gmo
+                this.firstGetMapObjects = false;
+            } else {
+                // on all others?
+                addIt = true;
+            }
+        }
+
+        if (addIt) {
+            envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
+                type: 8,
+            }));
+        }
+    };
+
+    /**
      * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
      * or adds the signature to an existing envelope.
      * @private
@@ -928,51 +964,67 @@ function Client(options) {
      * @return {Promise} - A Promise that will be resolved with a RequestEnvelope instance
      */
     this.buildSignedEnvelope = function(requests, envelope) {
-        return new Promise((resolve, reject) => {
-            if (!envelope) {
-                try {
-                    envelope = self.buildEnvelope(requests);
-                } catch (e) {
-                    reject(new retry.StopError(e));
-                }
+        if (!envelope) {
+            try {
+                envelope = self.buildEnvelope(requests);
+            } catch (e) {
+                throw new retry.StopError(e);
+            }
+        }
+
+        this.maybeAddPlatformRequest8(requests, envelope);
+
+        if (!envelope.auth_ticket) {
+            // Can't sign before we have received an auth ticket
+            return Promise.resolve(envelope);
+        }
+
+        if (self.options.useHashingServer) {
+            let key = self.options.hashingKey;
+            if (Array.isArray(key)) {
+                key = key[self.lastHashingKeyIndex];
+                self.lastHashingKeyIndex = (self.lastHashingKeyIndex + 1) % self.options.hashingKey.length;
             }
 
-            if (!envelope.auth_ticket) {
-                // Can't sign before we have received an auth ticket
-                resolve(envelope);
-                return;
-            }
+            self.signatureBuilder.useHashingServer(self.options.hashingServer + self.hashingVersion, key);
+        }
 
-            if (self.options.useHashingServer) {
-                let key = self.options.hashingKey;
-                if (Array.isArray(key)) {
-                    key = key[self.lastHashingKeyIndex];
-                    self.lastHashingKeyIndex = (self.lastHashingKeyIndex + 1) % self.options.hashingKey.length;
-                }
+        self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
 
-                self.signatureBuilder.useHashingServer(self.options.hashingServer + self.hashingVersion, key);
-            }
+        if (typeof self.options.signatureInfo === 'function') {
+            self.signatureBuilder.setFields(self.options.signatureInfo(envelope));
+        } else if (self.options.signatureInfo) {
+            self.signatureBuilder.setFields(self.options.signatureInfo);
+        }
 
-            self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
+        self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
+        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
-            if (typeof self.options.signatureInfo === 'function') {
-                self.signatureBuilder.setFields(self.options.signatureInfo(envelope));
-            } else if (self.options.signatureInfo) {
-                self.signatureBuilder.setFields(self.options.signatureInfo);
-            }
+        if (typeof self.signatureInfo === 'function') {
+            self.signatureBuilder.setFields(self.signatureInfo(envelope));
+        } else if (self.signatureInfo) {
+            self.signatureBuilder.setFields(self.signatureInfo);
+        }
 
-            self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
-
-            self.signatureBuilder.encrypt(envelope.requests, (err, sigEncrypted) => {
-                if (err) {
-                    if (err.startsWith('Request limited')) {
-                        reject(new Error(err));
-                    } else {
-                        reject(new retry.StopError(err));
-                    }
-                    return;
-                }
-
+        return retry(() => self.signatureBuilder.encryptAsync(envelope.requests)
+                        .catch(err => {
+                            if (err.name === 'HashServerError') {
+                                if (err.message === 'Request limited') {
+                                    throw err;
+                                } else {
+                                    throw new retry.StopError(err);
+                                }
+                            } else {
+                                throw new retry.StopError(err);
+                            }
+                        }),
+            {
+                interval: 1000,
+                backoff: 2,
+                max_tries: 10,
+                args: envelope.requests,
+            })
+            .then(sigEncrypted => {
                 envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
                     .PlatformRequest({
                         type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
@@ -980,10 +1032,8 @@ function Client(options) {
                             encrypted_signature: sigEncrypted
                         }).encode()
                     }));
-
-                resolve(envelope);
+                return envelope;
             });
-        });
     };
 
     /**
@@ -1210,7 +1260,12 @@ function Client(options) {
             const versions = JSON.parse(response.body);
             if (!versions) throw new Error('Invalid initial response from hashing server');
 
-            const iosVersion = '1.' + (+self.options.version - 3000) / 100;
+
+            let iosVersion = '1.' + ((+self.options.version - 3000) / 100).toFixed(0);
+            if ((+self.options.version % 100) !== 0) {
+                iosVersion += '.' + (+self.options.version % 100);
+            }
+
             self.hashingVersion = versions[iosVersion];
 
             if (!self.hashingVersion) {

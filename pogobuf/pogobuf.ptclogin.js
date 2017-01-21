@@ -17,7 +17,7 @@ function PTCLogin() {
 
     self.request = request.defaults({
         headers: {
-            'User-Agent': 'Niantic App'
+            'User-Agent': 'pokemongo/1 CFNetwork/808.2.16 Darwin/16.3.0'
         },
         jar: request.jar()
     });
