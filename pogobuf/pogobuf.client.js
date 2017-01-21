@@ -953,7 +953,7 @@ function Client(options) {
                 type: 8,
             }));
         }
-    }
+    };
 
     /**
      * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
