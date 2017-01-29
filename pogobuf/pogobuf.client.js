@@ -943,20 +943,16 @@ function Client(options) {
             '5301': '',
             '5302': 'e40c3e64817d9c96d99d28f6488a2efc40b11046',
             '5500': '7bb2d74dec0d8c5e132ad6c5491f72c9f19b306c',
-        }
+        };
 
         if (addIt) {
             envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
                 .PlatformRequest({
                     type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
                     request_message: new POGOProtos.Networking.Platform.Requests.UnknownPtr8Request({
-                        message: ptr8msg[self.options.version]
+                        message: ptr8msgs[self.options.version]
                     }).encode()
                 }));
-                
-            envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
-                type: 8,
-            }));
         }
     };
 
