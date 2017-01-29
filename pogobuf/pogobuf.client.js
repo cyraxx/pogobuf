@@ -964,7 +964,10 @@ function Client(options) {
 
         this.maybeAddPlatformRequest8(requests, envelope);
 
-        if (!envelope.auth_ticket) {
+        let authticket = envelope.auth_ticket;
+        if (!authticket && envelope.auth_info) {
+            authticket = envelope.auth_info;
+        } else {
             // Can't sign before we have received an auth ticket
             return Promise.resolve(envelope);
         }
@@ -979,7 +982,7 @@ function Client(options) {
             self.signatureBuilder.useHashingServer(self.options.hashingServer + self.hashingVersion, key);
         }
 
-        self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
+        self.signatureBuilder.setAuthTicket(authticket);
 
         if (typeof self.options.signatureInfo === 'function') {
             self.signatureBuilder.setFields(self.options.signatureInfo(envelope));
@@ -987,7 +990,6 @@ function Client(options) {
             self.signatureBuilder.setFields(self.options.signatureInfo);
         }
 
-        self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
         self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         if (typeof self.signatureInfo === 'function') {
