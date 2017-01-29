@@ -7,7 +7,8 @@ const EventEmitter = require('events').EventEmitter,
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
-    Utils = require('./pogobuf.utils.js');
+    Utils = require('./pogobuf.utils.js'),
+    Lehmer = require('./lehmer.js');
 
 Promise.promisifyAll(request);
 
@@ -154,12 +155,7 @@ function Client(options) {
      * @return {Promise}
      */
     this.batchCall = function() {
-        if (!self.batchRequests || !self.batchRequests.length) {
-            return Promise.resolve(false);
-        }
-
-        var p = self.callRPC(self.batchRequests);
-
+        var p = self.callRPC(self.batchRequests || []);
         self.batchClear();
         return p;
     };
@@ -827,9 +823,10 @@ function Client(options) {
 
     this.options = Object.assign({}, defaultOptions, options || {});
     this.authTicket = null;
-    this.rpcId = 0;
+    this.rpcId = 2;
     this.lastHashingKeyIndex = 0;
     this.firstGetMapObjects = true;
+    this.lehmer = new Lehmer(1);
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -848,19 +845,12 @@ function Client(options) {
     };
 
     /**
-     * Generates a random request ID
+     * Generates next rpc request id
      * @private
      * @return {Long}
      */
     this.getRequestID = function() {
-        var rand = 0x53B77E48;
-        if (self.rpcId === 0) {
-            self.rpcId = 1;
-        } else {
-            rand = Math.floor(Math.random() * Math.pow(2, 31));
-        }
-        self.rpcId++;
-        return new Long(self.rpcId, rand & 0xFFFFFFFF);
+        return new Long(self.rpcId++, this.lehmer.nextInt());
     };
 
     /**
