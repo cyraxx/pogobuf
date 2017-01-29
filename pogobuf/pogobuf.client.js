@@ -948,7 +948,7 @@ function Client(options) {
         if (addIt) {
             envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
                 .PlatformRequest({
-                    type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
+                    type: POGOProtos.Networking.Platform.PlatformRequestType.UNKNOWN_PTR_8,
                     request_message: new POGOProtos.Networking.Platform.Requests.UnknownPtr8Request({
                         message: ptr8msgs[self.options.version]
                     }).encode()
@@ -1155,7 +1155,7 @@ function Client(options) {
                     /* Throttling, retry same request later */
                     if (responseEnvelope.status_code === 52) {
                         signedEnvelope.platform_requests = [];
-                        Promise.delay(1500).then(() => {
+                        Promise.delay(2000).then(() => {
                             resolve(self.callRPC(requests, signedEnvelope));
                         });
                         return;
