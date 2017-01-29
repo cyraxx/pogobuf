@@ -976,9 +976,11 @@ function Client(options) {
         this.maybeAddPlatformRequest8(requests, envelope);
 
         let authticket = envelope.auth_ticket;
-        if (!authticket && envelope.auth_info) {
+        if (!authticket) {
             authticket = envelope.auth_info;
-        } else {
+        }
+
+        if (!authticket) {
             // Can't sign before we have received an auth ticket
             return Promise.resolve(envelope);
         }
@@ -1147,6 +1149,15 @@ function Client(options) {
 
                         signedEnvelope.platform_requests = [];
                         resolve(self.callRPC(requests, signedEnvelope));
+                        return;
+                    }
+
+                    /* Throttling, retry same request later */
+                    if (responseEnvelope.status_code === 52) {
+                        signedEnvelope.platform_requests = [];
+                        Promise.delay(1500).then(() => {
+                            resolve(self.callRPC(requests, signedEnvelope));
+                        });
                         return;
                     }
 
