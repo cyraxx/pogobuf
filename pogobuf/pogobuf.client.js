@@ -983,19 +983,12 @@ function Client(options) {
         }
 
         self.signatureBuilder.setAuthTicket(authticket);
+        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         if (typeof self.options.signatureInfo === 'function') {
             self.signatureBuilder.setFields(self.options.signatureInfo(envelope));
         } else if (self.options.signatureInfo) {
             self.signatureBuilder.setFields(self.options.signatureInfo);
-        }
-
-        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
-
-        if (typeof self.signatureInfo === 'function') {
-            self.signatureBuilder.setFields(self.signatureInfo(envelope));
-        } else if (self.signatureInfo) {
-            self.signatureBuilder.setFields(self.signatureInfo);
         }
 
         return retry(() => self.signatureBuilder.encryptAsync(envelope.requests)
