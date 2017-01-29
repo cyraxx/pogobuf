@@ -1145,7 +1145,8 @@ function Client(options) {
                             api_url: responseEnvelope.api_url
                         });
 
-                        resolve(self.callRPC(requests, envelope));
+                        signedEnvelope.platform_requests = [];
+                        resolve(self.callRPC(requests, signedEnvelope));
                         return;
                     }
 
