@@ -708,7 +708,7 @@ function Client(options) {
         });
     };
 
-    this.setAvatar = function(skin, hair, shirt, pants, hat, shoes, gender, eyes, backpack) {
+    this.setAvatar = function(skin, hair, shirt, pants, hat, shoes, avatar, eyes, backpack) {
         return self.callOrChain({
             type: RequestType.SET_AVATAR,
             message: new RequestMessages.SetAvatarMessage({
@@ -719,7 +719,7 @@ function Client(options) {
                     pants: pants,
                     hat: hat,
                     shoes: shoes,
-                    gender: gender,
+                    avatar: avatar,
                     eyes: eyes,
                     backpack: backpack
                 }
@@ -871,7 +871,7 @@ function Client(options) {
         if (self.playerLocationAccuracy) {
             envelopeData.accuracy = self.playerLocationAccuracy;
         } else {
-            var values = [5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65];
+            let values = [5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65];
             values.unshift(Math.floor(Math.random() * (80 - 66)) + 66);
             envelopeData.accuracy = values[Math.floor(values.length * Math.random())];
         }
@@ -881,11 +881,16 @@ function Client(options) {
         } else if (!self.options.authType || !self.options.authToken) {
             throw Error('No auth info provided');
         } else {
+            let unknown2 = 0;
+            if (self.options.authType === 'ptc') {
+                const values = [0, 21, 28, 28, 56, 59, 59, 59];
+                unknown2 = values[Math.floor(values.length * Math.random())];
+            }
             envelopeData.auth_info = {
                 provider: self.options.authType,
                 token: {
                     contents: self.options.authToken,
-                    unknown2: 59
+                    unknown2: unknown2,
                 }
             };
         }
