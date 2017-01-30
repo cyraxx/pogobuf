@@ -871,7 +871,7 @@ function Client(options) {
         if (self.playerLocationAccuracy) {
             envelopeData.accuracy = self.playerLocationAccuracy;
         } else {
-            let values = [5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65];
+            const values = [5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65];
             values.unshift(Math.floor(Math.random() * (80 - 66)) + 66);
             envelopeData.accuracy = values[Math.floor(values.length * Math.random())];
         }
