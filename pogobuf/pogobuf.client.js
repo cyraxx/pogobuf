@@ -970,12 +970,8 @@ function Client(options) {
 
         return retry(() => self.signatureBuilder.encryptAsync(envelope.requests)
                         .catch(err => {
-                            if (err.name === 'HashServerError') {
-                                if (err.message === 'Request limited') {
-                                    throw err;
-                                } else {
-                                    throw new retry.StopError(err);
-                                }
+                            if (err.name === 'HashServerError' && err.message === 'Request limited') {
+                                throw err;
                             } else {
                                 throw new retry.StopError(err);
                             }
