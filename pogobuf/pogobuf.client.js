@@ -13,6 +13,7 @@ const EventEmitter = require('events').EventEmitter,
 Promise.promisifyAll(request);
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
+    PlatformRequestType = POGOProtos.Networking.Platform.PlatformRequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
 
@@ -827,6 +828,7 @@ function Client(options) {
     this.lastHashingKeyIndex = 0;
     this.firstGetMapObjects = true;
     this.lehmer = new Lehmer(1);
+    this.ptr8 = '';
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -943,19 +945,12 @@ function Client(options) {
             }
         }
 
-        const ptr8msgs = {
-            '5300': '',
-            '5301': '',
-            '5302': 'e40c3e64817d9c96d99d28f6488a2efc40b11046',
-            '5500': '7bb2d74dec0d8c5e132ad6c5491f72c9f19b306c',
-        };
-
         if (addIt) {
             envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
                 .PlatformRequest({
                     type: POGOProtos.Networking.Platform.PlatformRequestType.UNKNOWN_PTR_8,
                     request_message: new POGOProtos.Networking.Platform.Requests.UnknownPtr8Request({
-                        message: ptr8msgs[self.options.version]
+                        message: this.ptr8,
                     }).encode()
                 }));
         }
@@ -1152,6 +1147,13 @@ function Client(options) {
                         resolve(self.callRPC(requests, signedEnvelope));
                         return;
                     }
+
+                    responseEnvelope.platform_returns.forEach(ptfm => {
+                        if (ptfm.type === PlatformRequestType.UNKNOWN_PTR_8) {
+                            const ptr8 = POGOProtos.Networking.Platform.Responses.UnknownPtr8Response.decode(ptfm.response);
+                            this.ptr8 = ptr8.message;
+                        }
+                    });
 
                     /* Throttling, retry same request later */
                     if (responseEnvelope.status_code === 52) {
