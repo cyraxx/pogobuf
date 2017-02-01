@@ -828,7 +828,6 @@ function Client(options) {
     this.lastHashingKeyIndex = 0;
     this.firstGetMapObjects = true;
     this.lehmer = new Lehmer(1);
-    this.ptr8 = '';
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -926,37 +925,6 @@ function Client(options) {
     };
 
     /**
-     * Add the mysterious platform_request type 8 on request
-     * @param {Object[]} requests - Array of requests to build
-     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to modify
-     */
-    this.maybeAddPlatformRequest8 = function(requests, envelope) {
-        let addIt = false;
-        if ((requests.length === 1 && requests[0].type === RequestType.GET_PLAYER)) {
-            // always in firsdt get_player
-            addIt = true;
-        } else if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
-            if (this.firstGetMapObjects) {
-                // not on first gmo
-                this.firstGetMapObjects = false;
-            } else {
-                // on all others?
-                addIt = true;
-            }
-        }
-
-        if (addIt) {
-            envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
-                .PlatformRequest({
-                    type: POGOProtos.Networking.Platform.PlatformRequestType.UNKNOWN_PTR_8,
-                    request_message: new POGOProtos.Networking.Platform.Requests.UnknownPtr8Request({
-                        message: this.ptr8,
-                    }).encode()
-                }));
-        }
-    };
-
-    /**
      * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
      * or adds the signature to an existing envelope.
      * @private
@@ -972,8 +940,6 @@ function Client(options) {
                 throw new retry.StopError(e);
             }
         }
-
-        this.maybeAddPlatformRequest8(requests, envelope);
 
         let authticket = envelope.auth_ticket;
         if (!authticket) {
@@ -1147,13 +1113,6 @@ function Client(options) {
                         resolve(self.callRPC(requests, signedEnvelope));
                         return;
                     }
-
-                    responseEnvelope.platform_returns.forEach(ptfm => {
-                        if (ptfm.type === PlatformRequestType.UNKNOWN_PTR_8) {
-                            const ptr8 = POGOProtos.Networking.Platform.Responses.UnknownPtr8Response.decode(ptfm.response);
-                            this.ptr8 = ptr8.message;
-                        }
-                    });
 
                     /* Throttling, retry same request later */
                     if (responseEnvelope.status_code === 52) {
