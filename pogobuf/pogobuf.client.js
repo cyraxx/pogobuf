@@ -13,7 +13,6 @@ const EventEmitter = require('events').EventEmitter,
 Promise.promisifyAll(request);
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
-    PlatformRequestType = POGOProtos.Networking.Platform.PlatformRequestType,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
 
