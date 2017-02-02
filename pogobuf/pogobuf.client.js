@@ -885,7 +885,7 @@ function Client(options) {
         } else {
             let unknown2 = 0;
             if (self.options.authType === 'ptc') {
-                const values = [0, 21, 28, 28, 56, 59, 59, 59];
+                const values = [2, 8, 21, 21, 21, 28, 37, 56, 59, 59, 59];
                 unknown2 = values[Math.floor(values.length * Math.random())];
             }
             envelopeData.auth_info = {
