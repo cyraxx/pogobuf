@@ -975,12 +975,12 @@ function Client(options) {
 
         this.maybeAddPlatformRequest8(requests, envelope);
 
-        let authticket = envelope.auth_ticket;
-        if (!authticket) {
-            authticket = envelope.auth_info;
+        let authTicket = envelope.auth_ticket;
+        if (!authTicket) {
+            authTicket = envelope.auth_info;
         }
 
-        if (!authticket) {
+        if (!authTicket) {
             // Can't sign before we have received an auth ticket
             return Promise.resolve(envelope);
         }
@@ -995,7 +995,7 @@ function Client(options) {
             self.signatureBuilder.useHashingServer(self.options.hashingServer + self.hashingVersion, key);
         }
 
-        self.signatureBuilder.setAuthTicket(authticket);
+        self.signatureBuilder.setAuthTicket(authTicket);
         self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         if (typeof self.options.signatureInfo === 'function') {
