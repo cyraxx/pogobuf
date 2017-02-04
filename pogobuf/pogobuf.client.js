@@ -1150,7 +1150,8 @@ function Client(options) {
 
                     responseEnvelope.platform_returns.forEach(ptfm => {
                         if (ptfm.type === PlatformRequestType.UNKNOWN_PTR_8) {
-                            const ptr8 = POGOProtos.Networking.Platform.Responses.UnknownPtr8Response.decode(ptfm.response);
+                            const proto = POGOProtos.Networking.Platform.Responses.UnknownPtr8Response;
+                            const ptr8 = proto.decode(ptfm.response);
                             this.ptr8 = ptr8.message;
                         }
                     });
