@@ -1229,11 +1229,8 @@ function Client(options) {
             const versions = JSON.parse(response.body);
             if (!versions) throw new Error('Invalid initial response from hashing server');
 
-
             let iosVersion = '1.' + ((+self.options.version - 3000) / 100).toFixed(0);
-            if ((+self.options.version % 100) !== 0) {
-                iosVersion += '.' + (+self.options.version % 100);
-            }
+            iosVersion += '.' + (+self.options.version % 100);
 
             self.hashingVersion = versions[iosVersion];
 
