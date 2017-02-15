@@ -828,7 +828,7 @@ function Client(options) {
     this.lastHashingKeyIndex = 0;
     this.firstGetMapObjects = true;
     this.lehmer = new Lehmer(1);
-    this.ptr8 = '';
+    this.ptr8 = '90f6a704505bccac73cec99b07794993e6fd5a12';
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
