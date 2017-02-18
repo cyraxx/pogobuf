@@ -223,7 +223,7 @@ declare namespace pogobuf {
             filters: POGOProtos.Enums.Filter[],
             start: number,
             limit: number
-        ): Promise<POGOProtos.Networking.Responses.ListAvatarCustomizationsReponse>;
+        ): Promise<POGOProtos.Networking.Responses.ListAvatarCustomizationsResponse>;
 
         markTutorialComplete(
             tutorialsCompleted: POGOProtos.Enums.TutorialState[],
