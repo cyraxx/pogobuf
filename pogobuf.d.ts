@@ -257,7 +257,7 @@ declare namespace pogobuf {
             pants: number,
             hat: number,
             shoes: number,
-            gender: POGOProtos.Enums.Gender,
+            avatar: number,
             eyes: number,
             backpack: number
         ): Promise<POGOProtos.Networking.Responses.SetAvatarResponse>;

@@ -714,7 +714,7 @@ function Client(options) {
         });
     };
 
-    this.setAvatar = function(skin, hair, shirt, pants, hat, shoes, gender, eyes, backpack) {
+    this.setAvatar = function(skin, hair, shirt, pants, hat, shoes, avatar, eyes, backpack) {
         return self.callOrChain({
             type: RequestType.SET_AVATAR,
             message: new RequestMessages.SetAvatarMessage({
@@ -725,7 +725,7 @@ function Client(options) {
                     pants: pants,
                     hat: hat,
                     shoes: shoes,
-                    gender: gender,
+                    avatar: avatar,
                     eyes: eyes,
                     backpack: backpack
                 }
