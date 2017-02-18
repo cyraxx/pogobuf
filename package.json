@@ -32,14 +32,14 @@
     "bluebird-retry": "^0.10.1",
     "gpsoauthnode": "0.0.5",
     "long": "^3.2.0",
-    "node-pogo-protos": "^2.4.2",
-    "node-pogo-signature": "pogosandbox/node-pogo-signature",
+    "node-pogo-protos": "^2.6.1",
+    "node-pogo-signature": "pogosandbox/node-pogo-signature#0.57.2",
     "request": "^2.79.0",
     "s2-geometry": "^1.2.9"
   },
   "devDependencies": {
-    "eslint": "^3.13.1",
-    "eslint-config-airbnb-base": "^11.0.1",
+    "eslint": "^3.15.0",
+    "eslint-config-airbnb-base": "^11.1.0",
     "eslint-plugin-import": "^2.2.0"
   }
 }
