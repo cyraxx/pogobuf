@@ -14,6 +14,11 @@ declare namespace pogobuf {
          */
         constructor(options?: Object);
 
+        /**
+         * Signature module
+         */
+        signatureBuilder: any;
+
          /**
           * Sets the specified client option to the given value.
           * Note that not all options support changes after client initialization.
@@ -32,12 +37,12 @@ declare namespace pogobuf {
          * @param {number} accuracy The location accuracy in m (optional) (default value is 0)
          * @param {number} altitude The player's altitude (optional) (default value is 0)
          */
-        setPosition(latitude: number | Object, longitude: number, accuracy?: number, altitude?: number): void;
+        setPosition(latitude: number | Object, longitude?: number, accuracy?: number, altitude?: number): void;
 
         /**
          * Performs client initialization and downloads needed settings from the API.
          */
-        init(): Promise<any>;
+        init(downloadSettings?: boolean): Promise<any>;
 
         /**
          * Sets batch mode. All further API requests will be held and executed in one RPC call when batchCall() is called.
@@ -102,8 +107,8 @@ declare namespace pogobuf {
 
         downloadItemTemplates(
             paginate: boolean,
-            pageOffset: number,
-            pageTimestamp: number
+            pageOffset?: number,
+            pageTimestamp?: number
         ): Promise<POGOProtos.Networking.Responses.DownloadItemTemplatesResponse>;
 
         downloadRemoteConfigVersion(
@@ -166,7 +171,7 @@ declare namespace pogobuf {
             deviceManufacturer: string,
             deviceModel: string,
             locale: string,
-            appVersion: string
+            appVersion: number
         ): Promise<POGOProtos.Networking.Responses.GetAssetDigestResponse>;
 
         getBuddyWalked(

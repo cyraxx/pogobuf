@@ -9,6 +9,8 @@ const EventEmitter = require('events').EventEmitter,
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js');
 
+const Lehmer = Utils.Random;
+
 Promise.promisifyAll(request);
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
@@ -154,12 +156,7 @@ function Client(options) {
      * @return {Promise}
      */
     this.batchCall = function() {
-        if (!self.batchRequests || !self.batchRequests.length) {
-            return Promise.resolve(false);
-        }
-
-        var p = self.callRPC(self.batchRequests);
-
+        var p = self.callRPC(self.batchRequests || []);
         self.batchClear();
         return p;
     };
@@ -829,8 +826,10 @@ function Client(options) {
 
     this.options = Object.assign({}, defaultOptions, options || {});
     this.authTicket = null;
-    this.rpcId = 0;
+    this.rpcId = 2;
     this.lastHashingKeyIndex = 0;
+    this.firstGetMapObjects = true;
+    this.lehmer = new Lehmer(1);
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -849,19 +848,12 @@ function Client(options) {
     };
 
     /**
-     * Generates a random request ID
+     * Generates next rpc request id
      * @private
      * @return {Long}
      */
     this.getRequestID = function() {
-        var rand = 0x53B77E48;
-        if (self.rpcId === 0) {
-            self.rpcId = 1;
-        } else {
-            rand = Math.floor(Math.random() * Math.pow(2, 31));
-        }
-        self.rpcId++;
-        return new Long(self.rpcId, rand & 0xFFFFFFFF);
+        return new Long(self.rpcId++, this.lehmer.nextInt());
     };
 
     /**
@@ -882,7 +874,7 @@ function Client(options) {
         if (self.playerLocationAccuracy) {
             envelopeData.accuracy = self.playerLocationAccuracy;
         } else {
-            var values = [5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65];
+            const values = [5, 5, 5, 5, 10, 10, 10, 30, 30, 50, 65];
             values.unshift(Math.floor(Math.random() * (80 - 66)) + 66);
             envelopeData.accuracy = values[Math.floor(values.length * Math.random())];
         }
@@ -892,11 +884,16 @@ function Client(options) {
         } else if (!self.options.authType || !self.options.authToken) {
             throw Error('No auth info provided');
         } else {
+            let unknown2 = 0;
+            if (self.options.authType === 'ptc') {
+                const values = [2, 8, 21, 21, 21, 28, 37, 56, 59, 59, 59];
+                unknown2 = values[Math.floor(values.length * Math.random())];
+            }
             envelopeData.auth_info = {
                 provider: self.options.authType,
                 token: {
                     contents: self.options.authToken,
-                    unknown2: 59
+                    unknown2: unknown2,
                 }
             };
         }
@@ -946,7 +943,12 @@ function Client(options) {
             }
         }
 
-        if (!envelope.auth_ticket) {
+        let authTicket = envelope.auth_ticket;
+        if (!authTicket) {
+            authTicket = envelope.auth_info;
+        }
+
+        if (!authTicket) {
             // Can't sign before we have received an auth ticket
             return Promise.resolve(envelope);
         }
@@ -961,7 +963,7 @@ function Client(options) {
             self.signatureBuilder.useHashingServer(self.options.hashingServer + self.hashingVersion, key);
         }
 
-        self.signatureBuilder.setAuthTicket(envelope.auth_ticket);
+        self.signatureBuilder.setAuthTicket(authTicket);
         self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         if (typeof self.options.signatureInfo === 'function') {
@@ -1109,7 +1111,17 @@ function Client(options) {
                             api_url: responseEnvelope.api_url
                         });
 
-                        resolve(self.callRPC(requests, envelope));
+                        signedEnvelope.platform_requests = [];
+                        resolve(self.callRPC(requests, signedEnvelope));
+                        return;
+                    }
+
+                    /* Throttling, retry same request later */
+                    if (responseEnvelope.status_code === 52) {
+                        signedEnvelope.platform_requests = [];
+                        Promise.delay(2000).then(() => {
+                            resolve(self.callRPC(requests, signedEnvelope));
+                        });
                         return;
                     }
 
@@ -1220,11 +1232,8 @@ function Client(options) {
             const versions = JSON.parse(response.body);
             if (!versions) throw new Error('Invalid initial response from hashing server');
 
-
             let iosVersion = '1.' + ((+self.options.version - 3000) / 100).toFixed(0);
-            if ((+self.options.version % 100) !== 0) {
-                iosVersion += '.' + (+self.options.version % 100);
-            }
+            iosVersion += '.' + (+self.options.version % 100);
 
             self.hashingVersion = versions[iosVersion];
 
