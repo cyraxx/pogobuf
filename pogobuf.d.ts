@@ -14,11 +14,6 @@ declare namespace pogobuf {
          */
         constructor(options?: Object);
 
-        /**
-         * Signature module
-         */
-        signatureBuilder: any;
-
          /**
           * Sets the specified client option to the given value.
           * Note that not all options support changes after client initialization.
@@ -58,6 +53,11 @@ declare namespace pogobuf {
          * Executes any batched requests.
          */
         batchCall(): Promise<any>;
+
+        /**
+         * Gets rate limit infos from the latest signature server request, if applicable.
+         */
+        getSignatureRateInfos(): Object;
 
         // Pokémon Go API methods
 

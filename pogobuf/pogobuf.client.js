@@ -161,6 +161,14 @@ function Client(options) {
         return p;
     };
 
+    /**
+     * Gets rate limit infos from the latest signature server request, if applicable.
+     * @return {Object}
+     */
+    this.getSignatureRateInfos = function() {
+        return self.signatureBuilder.utils.rateInfos;
+    };
+
     /*
      * API CALLS (in order of RequestType enum)
      */
