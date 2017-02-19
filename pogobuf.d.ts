@@ -141,7 +141,7 @@ declare namespace pogobuf {
 
         evolvePokemon(
             pokemonID: string | number | Long,
-            evolutionRequirementItemID: POGOProtos.Inventory.Item.ItemId
+            evolutionRequirementItemID?: POGOProtos.Inventory.Item.ItemId
         ): Promise<POGOProtos.Networking.Responses.EvolvePokemonResponse>;
 
         fortDeployPokemon(
