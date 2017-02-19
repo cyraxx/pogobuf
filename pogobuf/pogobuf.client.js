@@ -67,7 +67,7 @@ function Client(options) {
      * Sets the player's latitude and longitude.
      * Note that this does not actually update the player location on the server, it only sets
      * the location to be used in following API calls. To update the location on the server you
-     * probably want to call {@link #playerUpdate}.
+     * need to make an API call.
      * @param {number|object} latitude - The player's latitude, or an object with parameters
      * @param {number} longitude - The player's longitude
      * @param {number} [accuracy=0] - The location accuracy in m
@@ -164,17 +164,6 @@ function Client(options) {
     /*
      * API CALLS (in order of RequestType enum)
      */
-
-    this.playerUpdate = function() {
-        return self.callOrChain({
-            type: RequestType.PLAYER_UPDATE,
-            message: new RequestMessages.PlayerUpdateMessage({
-                latitude: self.playerLatitude,
-                longitude: self.playerLongitude
-            }),
-            responseType: Responses.PlayerUpdateResponse
-        });
-    };
 
     this.getPlayer = function(country, language, timezone) {
         return self.callOrChain({
@@ -399,11 +388,12 @@ function Client(options) {
         });
     };
 
-    this.evolvePokemon = function(pokemonID) {
+    this.evolvePokemon = function(pokemonID, evolutionRequirementItemID) {
         return self.callOrChain({
             type: RequestType.EVOLVE_POKEMON,
             message: new RequestMessages.EvolvePokemonMessage({
-                pokemon_id: pokemonID
+                pokemon_id: pokemonID,
+                evolution_item_requirement: evolutionRequirementItemID
             }),
             responseType: Responses.EvolvePokemonResponse
         });
@@ -672,6 +662,18 @@ function Client(options) {
         return self.callOrChain({
             type: RequestType.GET_BUDDY_WALKED,
             responseType: Responses.GetBuddyWalkedResponse
+        });
+    };
+
+    this.useItemEncounter = function(itemID, encounterID, spawnPointGUID) {
+        return self.callOrChain({
+            type: RequestType.USE_ITEM_ENCOUNTER,
+            message: new RequestMessages.UseItemEncounterMessage({
+                item: itemID,
+                encounter_id: encounterID,
+                spawn_point_guid: spawnPointGUID
+            }),
+            responseType: Responses.UseItemEncounterResponse
         });
     };
 
