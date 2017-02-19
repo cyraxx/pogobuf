@@ -7,8 +7,9 @@ const EventEmitter = require('events').EventEmitter,
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
-    Utils = require('./pogobuf.utils.js'),
-    Lehmer = require('./lehmer.js');
+    Utils = require('./pogobuf.utils.js');
+
+const Lehmer = Utils.Random;
 
 Promise.promisifyAll(request);
 
