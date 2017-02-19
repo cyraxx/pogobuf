@@ -828,7 +828,6 @@ function Client(options) {
     this.authTicket = null;
     this.rpcId = 2;
     this.lastHashingKeyIndex = 0;
-    this.firstGetMapObjects = true;
     this.lehmer = new Lehmer(1);
 
     /**
