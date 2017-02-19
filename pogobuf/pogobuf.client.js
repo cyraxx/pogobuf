@@ -162,10 +162,10 @@ function Client(options) {
     };
 
     /**
-     * Gets rate limit infos from the latest signature server request, if applicable.
+     * Gets rate limit info from the latest signature server request, if applicable.
      * @return {Object}
      */
-    this.getSignatureRateInfos = function() {
+    this.getSignatureRateInfo = function() {
         return self.signatureBuilder.utils.rateInfos;
     };
 

@@ -55,9 +55,9 @@ declare namespace pogobuf {
         batchCall(): Promise<any>;
 
         /**
-         * Gets rate limit infos from the latest signature server request, if applicable.
+         * Gets rate limit info from the latest signature server request, if applicable.
          */
-        getSignatureRateInfos(): Object;
+        getSignatureRateInfo(): Object;
 
         // Pokémon Go API methods
 
