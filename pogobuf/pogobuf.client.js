@@ -167,7 +167,7 @@ function Client(options) {
      * @return {Object}
      */
     this.getSignatureRateInfo = function() {
-        return self.signatureBuilder.utils.rateInfos;
+        return self.signatureBuilder.rateInfos;
     };
 
     /*
