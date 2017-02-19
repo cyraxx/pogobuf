@@ -18,7 +18,7 @@ declare namespace pogobuf {
           * Sets the specified client option to the given value.
           * Note that not all options support changes after client initialization.
           * @param {string} option Option name
-          * @param {string} value Option value
+          * @param {any} value Option value
           */
         setOption(option: string, value: any): void;
 
