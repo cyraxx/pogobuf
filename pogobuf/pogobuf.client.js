@@ -14,10 +14,14 @@ const Lehmer = Utils.Random;
 Promise.promisifyAll(request);
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
+    PlatformRequestType = POGOProtos.Networking.Platform.PlatformRequestType,
+    PlatformRequestMessages = POGOProtos.Networking.Platform.Requests,
+    PlatformResponses = POGOProtos.Networking.Platform.Responses,
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
+const INITIAL_PTR8 = '90f6a704505bccac73cec99b07794993e6fd5a12';
 
 // See pogobuf wiki for description of options
 const defaultOptions = {
@@ -836,7 +840,9 @@ function Client(options) {
     this.authTicket = null;
     this.rpcId = 2;
     this.lastHashingKeyIndex = 0;
+    this.firstGetMapObjects = true;
     this.lehmer = new Lehmer(1);
+    this.ptr8 = INITIAL_PTR8;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -934,6 +940,51 @@ function Client(options) {
     };
 
     /**
+     * Constructs and adds a platform request to a request envelope.
+     * @private
+     * @param {RequestEnvelope} envelope - Request envelope
+     * @param {PlatformRequestType} requestType - Type of the platform request to add
+     * @param {Object} requestMessage - Pre-built but not encoded PlatformRequest protobuf message
+     * @return {RequestEnvelope} The envelope (for convenience only)
+     */
+    this.addPlatformRequestToEnvelope = function(envelope, requestType, requestMessage) {
+        envelope.platform_requests.push(
+            new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
+                type: requestType,
+                request_message: requestMessage.encode()
+            })
+        );
+
+        return envelope;
+    };
+
+    /**
+     * Determines whether the as of yet unknown platform request type 8 should be added
+     * to the envelope based on the given type of requests.
+     * @private
+     * @param {Object[]} requests - Array of request data
+     * @return {boolean}
+     */
+    this.needsPtr8 = function(requests) {
+        // Single GET_PLAYER request always gets PTR8
+        if (requests.length === 1 && requests[0].type === RequestType.GET_PLAYER) {
+            return true;
+        }
+
+        // Any GET_MAP_OBJECTS requests get PTR8 except the first one in the session
+        if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
+            if (self.firstGetMapObjects) {
+                self.firstGetMapObjects = false;
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
+    };
+
+    /**
      * Creates an RPC envelope with the given list of requests and adds the encrypted signature,
      * or adds the signature to an existing envelope.
      * @private
@@ -948,6 +999,13 @@ function Client(options) {
             } catch (e) {
                 throw new retry.StopError(e);
             }
+        }
+
+        if (self.needsPtr8(requests)) {
+            self.addPlatformRequestToEnvelope(envelope, PlatformRequestType.UNKNOWN_PTR_8,
+                new PlatformRequestMessages.UnknownPtr8Request({
+                    message: self.ptr8,
+                }));
         }
 
         let authTicket = envelope.auth_ticket;
@@ -993,16 +1051,13 @@ function Client(options) {
                 max_tries: 10,
                 args: envelope.requests,
             })
-            .then(sigEncrypted => {
-                envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
-                    .PlatformRequest({
-                        type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
-                        request_message: new POGOProtos.Networking.Platform.Requests.SendEncryptedSignatureRequest({
-                            encrypted_signature: sigEncrypted
-                        }).encode()
-                    }));
-                return envelope;
-            });
+            .then(sigEncrypted =>
+                self.addPlatformRequestToEnvelope(envelope, PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
+                    new PlatformRequestMessages.SendEncryptedSignatureRequest({
+                        encrypted_signature: sigEncrypted
+                    })
+                )
+            );
     };
 
     /**
@@ -1122,6 +1177,13 @@ function Client(options) {
                         resolve(self.callRPC(requests, signedEnvelope));
                         return;
                     }
+
+                    responseEnvelope.platform_returns.forEach(platformReturn => {
+                        if (platformReturn.type === PlatformRequestType.UNKNOWN_PTR_8) {
+                            const ptr8 = PlatformResponses.UnknownPtr8Response.decode(platformReturn.response);
+                            if (ptr8) self.ptr8 = ptr8.message;
+                        }
+                    });
 
                     /* Throttling, retry same request later */
                     if (responseEnvelope.status_code === 52) {
