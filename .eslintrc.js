@@ -17,6 +17,7 @@ module.exports = {
         "indent": [2, 4, {
             "SwitchCase": 1
         }],
+        "linebreak-style": 0,
         "max-len": [1, {
             "tabWidth": 4,
             "code": 120,
