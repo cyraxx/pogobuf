@@ -1160,11 +1160,11 @@ function Client(options) {
                     if (self.endpoint === INITIAL_ENDPOINT) {
                         /* status_code 102 seems to be invalid auth token,
                            could use later when caching token. */
-                        // if (responseEnvelope.status_code !== 53) {
-                        //     reject(Error('Fetching RPC endpoint failed, received status code ' +
-                        //         responseEnvelope.status_code));
-                        //     return;
-                        // }
+                        if (responseEnvelope.status_code !== 53) {
+                            reject(Error('Fetching RPC endpoint failed, received status code ' +
+                                responseEnvelope.status_code));
+                            return;
+                        }
 
                         if (!responseEnvelope.api_url) {
                             reject(Error('Fetching RPC endpoint failed, none supplied in response'));
