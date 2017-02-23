@@ -7,7 +7,8 @@ const EventEmitter = require('events').EventEmitter,
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
-    Utils = require('./pogobuf.utils.js');
+    Utils = require('./pogobuf.utils.js'),
+    Signature = require('./pogobuf.signature');
 
 const Lehmer = Utils.Random;
 
@@ -35,10 +36,11 @@ const defaultOptions = {
     automaticLongConversion: true,
     includeRequestTypeInResponse: false,
     version: 4500,
-    signatureInfo: {},
+    signatureInfo: null,
     useHashingServer: false,
     hashingServer: 'http://hashing.pogodev.io/',
-    hashingKey: null
+    hashingKey: null,
+    deviceId: null,
 };
 
 /**
@@ -101,6 +103,11 @@ function Client(options) {
         if (typeof downloadSettings !== 'undefined') self.setOption('downloadSettings', downloadSettings);
 
         self.lastMapObjectsCall = 0;
+
+        // if no signature is defined, use default signature module
+        if (!self.options.signatureInfo) {
+            Signature.register(self, self.options.deviceId);
+        }
 
         // convert app version (5100) to client version (0.51)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
@@ -1154,11 +1161,11 @@ function Client(options) {
                     if (self.endpoint === INITIAL_ENDPOINT) {
                         /* status_code 102 seems to be invalid auth token,
                            could use later when caching token. */
-                        // if (responseEnvelope.status_code !== 53) {
-                        //     reject(Error('Fetching RPC endpoint failed, received status code ' +
-                        //         responseEnvelope.status_code));
-                        //     return;
-                        // }
+                        if (responseEnvelope.status_code !== 53) {
+                            reject(Error('Fetching RPC endpoint failed, received status code ' +
+                                responseEnvelope.status_code));
+                            return;
+                        }
 
                         if (!responseEnvelope.api_url) {
                             reject(Error('Fetching RPC endpoint failed, none supplied in response'));
