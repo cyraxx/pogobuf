@@ -126,7 +126,7 @@ module.exports.register = function(client, deviceId) {
             rotation_rate_y: randomTriangular(-4.7, 4.3, 0),
             rotation_rate_z: randomTriangular(-4.7, 6.5, 0),
             gravity_x: randomTriangular(-1, 1, 0),
-            gravity_y: randomTriangular(-1, 1, -.2),
+            gravity_y: randomTriangular(-1, 1, -0.2),
             gravity_z: randomTriangular(-1, 0.7, -0.7),
             status: 3,
         }];

@@ -7,7 +7,8 @@ const EventEmitter = require('events').EventEmitter,
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
-    Utils = require('./pogobuf.utils.js');
+    Utils = require('./pogobuf.utils.js'),
+    Signature = require('./pogobuf.signature');
 
 const Lehmer = Utils.Random;
 
@@ -105,7 +106,7 @@ function Client(options) {
 
         // if no signature is defined, use default signature module
         if (!self.options.signatureInfo) {
-            require('./pogobuf.signature').register(self, self.options.deviceId);
+            Signature.register(self, self.options.deviceId);
         }
 
         // convert app version (5100) to client version (0.51)
