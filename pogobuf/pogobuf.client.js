@@ -108,6 +108,12 @@ function Client(options) {
             signatureVersion += '.' + (+self.options.version % 100);
         }
 
+        // old uk25 seems to be refused now.
+        // if useHashingServer=false, pass 0.45 to signature builder
+        if (!self.options.useHashingServer) {
+            signatureVersion = '0.45';
+        }
+
         self.signatureBuilder = new pogoSignature.Builder({
             protos: POGOProtos,
             version: signatureVersion,
