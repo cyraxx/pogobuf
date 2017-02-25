@@ -108,7 +108,7 @@ declare namespace pogobuf {
         downloadItemTemplates(
             paginate: boolean,
             pageOffset?: number,
-            pageTimestamp?: number
+            pageTimestamp?: Long
         ): Promise<POGOProtos.Networking.Responses.DownloadItemTemplatesResponse>;
 
         downloadRemoteConfigVersion(
