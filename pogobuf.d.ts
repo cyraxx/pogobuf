@@ -14,6 +14,8 @@ declare namespace pogobuf {
          */
         constructor(options?: Object);
 
+        signatureBuilder: any;
+
          /**
           * Sets the specified client option to the given value.
           * Note that not all options support changes after client initialization.
