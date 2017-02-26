@@ -8,23 +8,16 @@ const EventEmitter = require('events').EventEmitter,
     request = require('request'),
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js'),
-<<<<<<< HEAD
-    Lehmer = require('./lehmer.js');
-=======
     Signature = require('./pogobuf.signature');
 
 const Lehmer = Utils.Random;
->>>>>>> refs/remotes/origin/requestid.0.57.2
 
 Promise.promisifyAll(request);
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     PlatformRequestType = POGOProtos.Networking.Platform.PlatformRequestType,
-<<<<<<< HEAD
-=======
     PlatformRequestMessages = POGOProtos.Networking.Platform.Requests,
     PlatformResponses = POGOProtos.Networking.Platform.Responses,
->>>>>>> refs/remotes/origin/requestid.0.57.2
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
 
