@@ -8,16 +8,28 @@ const EventEmitter = require('events').EventEmitter,
     request = require('request'),
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js'),
+<<<<<<< HEAD
     Lehmer = require('./lehmer.js');
+=======
+    Signature = require('./pogobuf.signature');
+
+const Lehmer = Utils.Random;
+>>>>>>> refs/remotes/origin/requestid.0.57.2
 
 Promise.promisifyAll(request);
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     PlatformRequestType = POGOProtos.Networking.Platform.PlatformRequestType,
+<<<<<<< HEAD
+=======
+    PlatformRequestMessages = POGOProtos.Networking.Platform.Requests,
+    PlatformResponses = POGOProtos.Networking.Platform.Responses,
+>>>>>>> refs/remotes/origin/requestid.0.57.2
     RequestMessages = POGOProtos.Networking.Requests.Messages,
     Responses = POGOProtos.Networking.Responses;
 
 const INITIAL_ENDPOINT = 'https://pgorelease.nianticlabs.com/plfe/rpc';
+const INITIAL_PTR8 = '90f6a704505bccac73cec99b07794993e6fd5a12';
 
 // See pogobuf wiki for description of options
 const defaultOptions = {
@@ -31,10 +43,11 @@ const defaultOptions = {
     automaticLongConversion: true,
     includeRequestTypeInResponse: false,
     version: 4500,
-    signatureInfo: {},
+    signatureInfo: null,
     useHashingServer: false,
     hashingServer: 'http://hashing.pogodev.io/',
-    hashingKey: null
+    hashingKey: null,
+    deviceId: null,
 };
 
 /**
@@ -57,7 +70,7 @@ function Client(options) {
       * Sets the specified client option to the given value.
       * Note that not all options support changes after client initialization.
       * @param {string} option - Option name
-      * @param {string} value - Option value
+      * @param {any} value - Option value
       */
     this.setOption = function(option, value) {
         self.options[option] = value;
@@ -67,7 +80,7 @@ function Client(options) {
      * Sets the player's latitude and longitude.
      * Note that this does not actually update the player location on the server, it only sets
      * the location to be used in following API calls. To update the location on the server you
-     * probably want to call {@link #playerUpdate}.
+     * need to make an API call.
      * @param {number|object} latitude - The player's latitude, or an object with parameters
      * @param {number} longitude - The player's longitude
      * @param {number} [accuracy=0] - The location accuracy in m
@@ -97,6 +110,11 @@ function Client(options) {
         if (typeof downloadSettings !== 'undefined') self.setOption('downloadSettings', downloadSettings);
 
         self.lastMapObjectsCall = 0;
+
+        // if no signature is defined, use default signature module
+        if (!self.options.signatureInfo) {
+            Signature.register(self, self.options.deviceId);
+        }
 
         // convert app version (5100) to client version (0.51)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
@@ -161,20 +179,17 @@ function Client(options) {
         return p;
     };
 
+    /**
+     * Gets rate limit info from the latest signature server request, if applicable.
+     * @return {Object}
+     */
+    this.getSignatureRateInfo = function() {
+        return self.signatureBuilder.rateInfos;
+    };
+
     /*
      * API CALLS (in order of RequestType enum)
      */
-
-    this.playerUpdate = function() {
-        return self.callOrChain({
-            type: RequestType.PLAYER_UPDATE,
-            message: new RequestMessages.PlayerUpdateMessage({
-                latitude: self.playerLatitude,
-                longitude: self.playerLongitude
-            }),
-            responseType: Responses.PlayerUpdateResponse
-        });
-    };
 
     this.getPlayer = function(country, language, timezone) {
         return self.callOrChain({
@@ -399,11 +414,12 @@ function Client(options) {
         });
     };
 
-    this.evolvePokemon = function(pokemonID) {
+    this.evolvePokemon = function(pokemonID, evolutionRequirementItemID) {
         return self.callOrChain({
             type: RequestType.EVOLVE_POKEMON,
             message: new RequestMessages.EvolvePokemonMessage({
-                pokemon_id: pokemonID
+                pokemon_id: pokemonID,
+                evolution_item_requirement: evolutionRequirementItemID
             }),
             responseType: Responses.EvolvePokemonResponse
         });
@@ -675,6 +691,18 @@ function Client(options) {
         });
     };
 
+    this.useItemEncounter = function(itemID, encounterID, spawnPointGUID) {
+        return self.callOrChain({
+            type: RequestType.USE_ITEM_ENCOUNTER,
+            message: new RequestMessages.UseItemEncounterMessage({
+                item: itemID,
+                encounter_id: encounterID,
+                spawn_point_guid: spawnPointGUID
+            }),
+            responseType: Responses.UseItemEncounterResponse
+        });
+    };
+
     this.getAssetDigest = function(platform, deviceManufacturer, deviceModel, locale, appVersion) {
         return self.callOrChain({
             type: RequestType.GET_ASSET_DIGEST,
@@ -827,8 +855,8 @@ function Client(options) {
     this.rpcId = 2;
     this.lastHashingKeyIndex = 0;
     this.firstGetMapObjects = true;
-    this.lehmer = new Lehmer(1);
-    this.ptr8 = '90f6a704505bccac73cec99b07794993e6fd5a12';
+    this.lehmer = new Lehmer(16807);
+    this.ptr8 = INITIAL_PTR8;
 
     /**
      * Executes a request and returns a Promise or, if we are in batch mode, adds it to the
@@ -926,34 +954,48 @@ function Client(options) {
     };
 
     /**
-     * Add the mysterious platform_request type 8 on request
-     * @param {Object[]} requests - Array of requests to build
-     * @param {RequestEnvelope} [envelope] - Pre-built request envelope to modify
+     * Constructs and adds a platform request to a request envelope.
+     * @private
+     * @param {RequestEnvelope} envelope - Request envelope
+     * @param {PlatformRequestType} requestType - Type of the platform request to add
+     * @param {Object} requestMessage - Pre-built but not encoded PlatformRequest protobuf message
+     * @return {RequestEnvelope} The envelope (for convenience only)
      */
-    this.maybeAddPlatformRequest8 = function(requests, envelope) {
-        let addIt = false;
-        if ((requests.length === 1 && requests[0].type === RequestType.GET_PLAYER)) {
-            // always in firsdt get_player
-            addIt = true;
-        } else if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
-            if (this.firstGetMapObjects) {
-                // not on first gmo
-                this.firstGetMapObjects = false;
-            } else {
-                // on all others?
-                addIt = true;
-            }
+    this.addPlatformRequestToEnvelope = function(envelope, requestType, requestMessage) {
+        envelope.platform_requests.push(
+            new POGOProtos.Networking.Envelopes.RequestEnvelope.PlatformRequest({
+                type: requestType,
+                request_message: requestMessage.encode()
+            })
+        );
+
+        return envelope;
+    };
+
+    /**
+     * Determines whether the as of yet unknown platform request type 8 should be added
+     * to the envelope based on the given type of requests.
+     * @private
+     * @param {Object[]} requests - Array of request data
+     * @return {boolean}
+     */
+    this.needsPtr8 = function(requests) {
+        // Single GET_PLAYER request always gets PTR8
+        if (requests.length === 1 && requests[0].type === RequestType.GET_PLAYER) {
+            return true;
         }
 
-        if (addIt) {
-            envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
-                .PlatformRequest({
-                    type: POGOProtos.Networking.Platform.PlatformRequestType.UNKNOWN_PTR_8,
-                    request_message: new POGOProtos.Networking.Platform.Requests.UnknownPtr8Request({
-                        message: this.ptr8,
-                    }).encode()
-                }));
+        // Any GET_MAP_OBJECTS requests get PTR8 except the first one in the session
+        if (requests.some(r => r.type === RequestType.GET_MAP_OBJECTS)) {
+            if (self.firstGetMapObjects) {
+                self.firstGetMapObjects = false;
+                return false;
+            }
+
+            return true;
         }
+
+        return false;
     };
 
     /**
@@ -973,7 +1015,12 @@ function Client(options) {
             }
         }
 
-        this.maybeAddPlatformRequest8(requests, envelope);
+        if (self.needsPtr8(requests)) {
+            self.addPlatformRequestToEnvelope(envelope, PlatformRequestType.UNKNOWN_PTR_8,
+                new PlatformRequestMessages.UnknownPtr8Request({
+                    message: self.ptr8,
+                }));
+        }
 
         let authTicket = envelope.auth_ticket;
         if (!authTicket) {
@@ -1018,16 +1065,13 @@ function Client(options) {
                 max_tries: 10,
                 args: envelope.requests,
             })
-            .then(sigEncrypted => {
-                envelope.platform_requests.push(new POGOProtos.Networking.Envelopes.RequestEnvelope
-                    .PlatformRequest({
-                        type: POGOProtos.Networking.Platform.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
-                        request_message: new POGOProtos.Networking.Platform.Requests.SendEncryptedSignatureRequest({
-                            encrypted_signature: sigEncrypted
-                        }).encode()
-                    }));
-                return envelope;
-            });
+            .then(sigEncrypted =>
+                self.addPlatformRequestToEnvelope(envelope, PlatformRequestType.SEND_ENCRYPTED_SIGNATURE,
+                    new PlatformRequestMessages.SendEncryptedSignatureRequest({
+                        encrypted_signature: sigEncrypted
+                    })
+                )
+            );
     };
 
     /**
@@ -1148,11 +1192,10 @@ function Client(options) {
                         return;
                     }
 
-                    responseEnvelope.platform_returns.forEach(ptfm => {
-                        if (ptfm.type === PlatformRequestType.UNKNOWN_PTR_8) {
-                            const proto = POGOProtos.Networking.Platform.Responses.UnknownPtr8Response;
-                            const ptr8 = proto.decode(ptfm.response);
-                            this.ptr8 = ptr8.message;
+                    responseEnvelope.platform_returns.forEach(platformReturn => {
+                        if (platformReturn.type === PlatformRequestType.UNKNOWN_PTR_8) {
+                            const ptr8 = PlatformResponses.UnknownPtr8Response.decode(platformReturn.response);
+                            if (ptr8) self.ptr8 = ptr8.message;
                         }
                     });
 
@@ -1274,6 +1317,7 @@ function Client(options) {
 
             let iosVersion = '1.' + ((+self.options.version - 3000) / 100).toFixed(0);
             iosVersion += '.' + (+self.options.version % 100);
+
             self.hashingVersion = versions[iosVersion];
 
             if (!self.hashingVersion) {
