@@ -1214,6 +1214,8 @@ function Client(options) {
                         .then(token => {
                             self.options.authToken = token;
                             self.authTicket = null;
+                            signedEnvelope.auth_ticket = null;
+                            signedEnvelope.auth_token = token;
                             resolve(self.callRPC(requests, signedEnvelope));
                         });
                         return;
