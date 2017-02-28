@@ -1207,6 +1207,18 @@ function Client(options) {
                         }
                     });
 
+                    /* Auth expire, auto relogin */
+                    if (responseEnvelope.status_code === 102 && self.login) {
+                        signedEnvelope.platform_requests = [];
+                        self.login.login(self.options.username, self.options.password)
+                        .then(token => {
+                            self.options.authToken = token;
+                            self.authTicket = null;
+                            resolve(self.callRPC(requests, signedEnvelope));
+                        });
+                        return;
+                    }
+
                     /* Throttling, retry same request later */
                     if (responseEnvelope.status_code === 52) {
                         signedEnvelope.platform_requests = [];
