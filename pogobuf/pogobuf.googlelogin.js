@@ -24,6 +24,13 @@ function GoogleLogin() {
     const GOOGLE_LOGIN_CLIENT_SIG = '321187995bc7cdc2b5fc91b11a96e2baa8602c62';
 
     /**
+     * Reset login so it can be reused
+     */
+    this.reset = function() {
+
+    }
+
+    /**
      * Performs the Google Login using Android Device and returns a Promise that will be resolved
      * with the auth token.
      * @param {string} username
