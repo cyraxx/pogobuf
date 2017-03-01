@@ -15,12 +15,18 @@ function PTCLogin() {
     }
     const self = this;
 
-    self.request = request.defaults({
-        headers: {
-            'User-Agent': 'pokemongo/1 CFNetwork/808.2.16 Darwin/16.3.0'
-        },
-        jar: request.jar()
-    });
+    /**
+     * Reset login so it can be reused
+     */
+    this.reset = function() {
+        self.request = request.defaults({
+            headers: {
+                'User-Agent': 'pokemongo/1 CFNetwork/808.2.16 Darwin/16.3.0'
+            },
+            jar: request.jar()
+        });
+    }
+    this.reset();
 
     /**
      * Performs the PTC login process and returns a Promise that will be resolved with the
