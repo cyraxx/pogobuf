@@ -26,9 +26,7 @@ function GoogleLogin() {
     /**
      * Reset login so it can be reused
      */
-    this.reset = function() {
-
-    }
+    this.reset = function() { };
 
     /**
      * Performs the Google Login using Android Device and returns a Promise that will be resolved

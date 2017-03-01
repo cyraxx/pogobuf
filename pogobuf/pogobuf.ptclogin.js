@@ -25,7 +25,8 @@ function PTCLogin() {
             },
             jar: request.jar()
         });
-    }
+    };
+
     this.reset();
 
     /**
