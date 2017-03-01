@@ -841,7 +841,7 @@ function Client(options) {
     this.rpcId = 2;
     this.lastHashingKeyIndex = 0;
     this.firstGetMapObjects = true;
-    this.lehmer = new Lehmer(1);
+    this.lehmer = new Lehmer(16807);
     this.ptr8 = INITIAL_PTR8;
 
     /**
