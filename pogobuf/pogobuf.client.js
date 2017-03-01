@@ -1209,7 +1209,6 @@ function Client(options) {
 
                     /* Auth expire, auto relogin */
                     if (responseEnvelope.status_code === 102 && self.login) {
-                        console.log('token renew');
                         signedEnvelope.platform_requests = [];
                         self.login.reset();
                         self.login.login(self.options.username, self.options.password)
