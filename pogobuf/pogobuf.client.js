@@ -9,7 +9,8 @@ const EventEmitter = require('events').EventEmitter,
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js'),
     PTCLogin = require('./pogobuf.ptclogin.js'),
-    GoogleLogin = require('./pogobuf.googlelogin.js');
+    GoogleLogin = require('./pogobuf.googlelogin.js'),
+    Signature = require('./pogobuf.signature');
 
 const Lehmer = Utils.Random;
 
@@ -39,10 +40,11 @@ const defaultOptions = {
     automaticLongConversion: true,
     includeRequestTypeInResponse: false,
     version: 4500,
-    signatureInfo: {},
+    signatureInfo: null,
     useHashingServer: false,
     hashingServer: 'http://hashing.pogodev.io/',
-    hashingKey: null
+    hashingKey: null,
+    deviceId: null,
 };
 
 /**
@@ -105,6 +107,11 @@ function Client(options) {
         if (typeof downloadSettings !== 'undefined') self.setOption('downloadSettings', downloadSettings);
 
         self.lastMapObjectsCall = 0;
+
+        // if no signature is defined, use default signature module
+        if (!self.options.signatureInfo) {
+            Signature.register(self, self.options.deviceId);
+        }
 
         // convert app version (5100) to client version (0.51)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
@@ -863,7 +870,7 @@ function Client(options) {
     this.rpcId = 2;
     this.lastHashingKeyIndex = 0;
     this.firstGetMapObjects = true;
-    this.lehmer = new Lehmer(1);
+    this.lehmer = new Lehmer(16807);
     this.ptr8 = INITIAL_PTR8;
 
     /**
