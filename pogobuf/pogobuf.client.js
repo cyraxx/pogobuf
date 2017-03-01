@@ -132,19 +132,17 @@ function Client(options) {
         // login
         if (!self.options.token) {
             if (!self.options.username) throw new Error('No token nor credentials provided.');
-            if (self.options.authType == 'ptc') {
+            if (self.options.authType === 'ptc') {
                 self.login = new PTCLogin();
                 if (self.options.proxy) self.login.setProxy(self.options.proxy);
             } else {
                 self.login = new GoogleLogin();
             }
 
-            promise = promise.then(() => {
-                return self.login.login(self.options.username, self.options.password)
+            promise = promise.then(() => self.login.login(self.options.username, self.options.password)
                         .then(token => {
                             self.options.authToken = token;
-                        });
-            });
+                        }));
         }
 
         if (self.options.useHashingServer) {
