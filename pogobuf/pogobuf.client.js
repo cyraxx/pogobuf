@@ -102,11 +102,9 @@ function Client(options) {
 
         self.lastMapObjectsCall = 0;
 
-        // convert app version (5100) to client version (0.51)
+        // convert app version (5703) to client version (0.57.3)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
-        if ((+self.options.version % 100) !== 0) {
-            signatureVersion += '.' + (+self.options.version % 100);
-        }
+        signatureVersion += '.' + (+self.options.version % 100);
 
         self.signatureBuilder = new pogoSignature.Builder({
             protos: POGOProtos,
@@ -1092,6 +1090,32 @@ function Client(options) {
     };
 
     /**
+     * Handle redirection.
+     * @param {Object[]} requests - Array of requests to send
+     * @param {RequestEnvelope} signedEnvelope - request envelope
+     * @param {ResponseEnvelope} responseEnvelope - result from api call
+     * @param {function} resolve - called with success
+     * @param {function} reject - called in case of failure
+     */
+    this.redirect = function(requests, signedEnvelope, responseEnvelope, resolve, reject) {
+        if (!responseEnvelope.api_url) {
+            reject(Error('Fetching RPC endpoint failed, none supplied in response'));
+            return;
+        }
+
+        self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
+
+        self.emit('endpoint-response', {
+            status_code: responseEnvelope.status_code,
+            request_id: responseEnvelope.request_id.toString(),
+            api_url: responseEnvelope.api_url
+        });
+
+        signedEnvelope.platform_requests = [];
+        resolve(self.callRPC(requests, signedEnvelope));
+    };
+
+    /**
      * Executes an RPC call with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to send
@@ -1151,30 +1175,8 @@ function Client(options) {
 
                     if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
-                    if (self.endpoint === INITIAL_ENDPOINT) {
-                        /* status code should be 53, but we sometimes
-                           see 2 with a valid api_url field */
-                        if (responseEnvelope.status_code !== 53 && responseEnvelope.status_code !== 2) {
-                            reject(Error('Fetching RPC endpoint failed, received status code ' +
-                                responseEnvelope.status_code));
-                            return;
-                        }
-
-                        if (!responseEnvelope.api_url) {
-                            reject(Error('Fetching RPC endpoint failed, none supplied in response'));
-                            return;
-                        }
-
-                        self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
-
-                        self.emit('endpoint-response', {
-                            status_code: responseEnvelope.status_code,
-                            request_id: responseEnvelope.request_id.toString(),
-                            api_url: responseEnvelope.api_url
-                        });
-
-                        signedEnvelope.platform_requests = [];
-                        resolve(self.callRPC(requests, signedEnvelope));
+                    if (self.endpoint === INITIAL_ENDPOINT || responseEnvelope.status_code === 53) {
+                        self.redirect(requests, signedEnvelope, responseEnvelope, resolve, reject);
                         return;
                     }
 
