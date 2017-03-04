@@ -1152,9 +1152,9 @@ function Client(options) {
                     if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
                     if (self.endpoint === INITIAL_ENDPOINT) {
-                        /* status_code 102 seems to be invalid auth token,
-                           could use later when caching token. */
-                        if (responseEnvelope.status_code !== 53) {
+                        /* status code should be 53, but we sometimes
+                           see 2 with a valid api_url field */
+                        if (responseEnvelope.status_code !== 53 && responseEnvelope.status_code !== 2) {
                             reject(Error('Fetching RPC endpoint failed, received status code ' +
                                 responseEnvelope.status_code));
                             return;
