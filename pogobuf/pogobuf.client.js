@@ -890,6 +890,25 @@ function Client(options) {
     };
 
     /**
+     * Generate auth_info object from authToken
+     * @return {object} auth_info to put in envelop
+     */
+    this.getAuthInfoObject = function() {
+        let unknown2 = 0;
+        if (self.options.authType === 'ptc') {
+            const values = [2, 8, 21, 21, 21, 28, 37, 56, 59, 59, 59];
+            unknown2 = values[Math.floor(values.length * Math.random())];
+        }
+        return {
+            provider: self.options.authType,
+            token: {
+                contents: self.options.authToken,
+                unknown2: unknown2,
+            }
+        };
+    };
+
+    /**
      * Creates an RPC envelope with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to build
@@ -917,18 +936,7 @@ function Client(options) {
         } else if (!self.options.authType || !self.options.authToken) {
             throw Error('No auth info provided');
         } else {
-            let unknown2 = 0;
-            if (self.options.authType === 'ptc') {
-                const values = [2, 8, 21, 21, 21, 28, 37, 56, 59, 59, 59];
-                unknown2 = values[Math.floor(values.length * Math.random())];
-            }
-            envelopeData.auth_info = {
-                provider: self.options.authType,
-                token: {
-                    contents: self.options.authToken,
-                    unknown2: unknown2,
-                }
-            };
+            envelopeData.auth_info = this.getAuthInfoObject();
         }
 
         if (requests) {
@@ -1214,7 +1222,7 @@ function Client(options) {
                             self.options.authToken = token;
                             self.authTicket = null;
                             signedEnvelope.auth_ticket = null;
-                            signedEnvelope.auth_info = token;
+                            signedEnvelope.auth_info = this.getAuthInfoObject();
                             resolve(self.callRPC(requests, signedEnvelope));
                         });
                         return;
