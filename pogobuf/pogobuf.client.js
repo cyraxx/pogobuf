@@ -130,10 +130,12 @@ function Client(options) {
         }
 
         if (self.options.appSimulation) {
+            const ios = POGOProtos.Enums.Platform.IOS;
+            const version = +self.options.version;
             promise = promise.then(() => self.batchStart().batchCall())
                         .then(() => self.getPlayer('US', 'en', 'Europe/Paris'))
                         .then(() => self.batchStart()
-                                        .downloadRemoteConfigVersion(POGOProtos.Enums.Platform.IOS, '', '', '', +self.options.version)
+                                        .downloadRemoteConfigVersion(ios, '', '', '', version)
                                         .checkChallenge()
                                         .getHatchedEggs()
                                         .getInventory()
@@ -1283,7 +1285,7 @@ function Client(options) {
     this.processInitialResponse = function(responses) {
         // Extract the minimum delay of getMapObjects()
         if (responses.length >= 5) {
-            let settingsResponse = responses[5];
+            const settingsResponse = responses[5];
             if (settingsResponse &&
                 !settingsResponse.error &&
                 settingsResponse.settings &&
