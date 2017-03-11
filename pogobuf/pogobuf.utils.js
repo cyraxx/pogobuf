@@ -1,7 +1,8 @@
 'use strict';
 
 var s2 = require('s2-geometry').S2,
-    Long = require('long');
+    Long = require('long'),
+    ByteBuffer = require('bytebuffer');
 
 /**
  * Various utilities for dealing with Pokémon Go API requests.
@@ -266,6 +267,7 @@ module.exports = {
      */
     convertLongs: function(object) {
         if (!object || typeof object !== 'object') return object;
+        if (object instanceof ByteBuffer) return object;
 
         if (Long.isLong(object)) {
             return object.lessThanOrEqual(Number.MAX_SAFE_INTEGER)
