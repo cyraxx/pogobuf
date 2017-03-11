@@ -104,7 +104,9 @@ function Client(options) {
 
         // convert app version (5703) to client version (0.57.3)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
-        signatureVersion += '.' + (+self.options.version % 100);
+        if ((+self.options.version % 100) !== 0) {
+            signatureVersion += '.' + (+self.options.version % 100);
+        }
 
         self.signatureBuilder = new pogoSignature.Builder({
             protos: POGOProtos,
