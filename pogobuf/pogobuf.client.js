@@ -3,7 +3,7 @@
 const EventEmitter = require('events').EventEmitter,
     Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
-    Signature = require('pogobuf.signature'),
+    Signature = require('pogobuf-signature'),
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
