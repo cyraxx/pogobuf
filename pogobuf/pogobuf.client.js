@@ -3,7 +3,7 @@
 const EventEmitter = require('events').EventEmitter,
     Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
-    pogoSignature = require('node-pogo-signature'),
+    Signature = require('pogobuf.signature'),
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
@@ -35,10 +35,10 @@ const defaultOptions = {
     automaticLongConversion: true,
     includeRequestTypeInResponse: false,
     version: 4500,
-    signatureInfo: {},
     useHashingServer: false,
     hashingServer: 'http://hashing.pogodev.io/',
-    hashingKey: null
+    hashingKey: null,
+    deviceId: null,
 };
 
 /**
@@ -102,13 +102,13 @@ function Client(options) {
 
         self.lastMapObjectsCall = 0;
 
-        // convert app version (5100) to client version (0.51)
+        // convert app version (5704) to client version (0.57.4)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
-        if ((+self.options.version % 100) !== 0) {
-            signatureVersion += '.' + (+self.options.version % 100);
-        }
+        signatureVersion += '.' + (+self.options.version % 100);
 
-        self.signatureBuilder = new pogoSignature.Builder({
+        Signature.register(self, self.options.deviceId);
+
+        self.signatureBuilder = new Signature.encryption.Builder({
             protos: POGOProtos,
             version: signatureVersion,
         });
@@ -1363,15 +1363,6 @@ function Client(options) {
      */
     this.setMapObjectsThrottlingEnabled = function(enable) {
         self.setOption('mapObjectsThrottling', enable);
-    };
-
-    /**
-     * Sets the signatureInfo option.
-     * @deprecated Use options object or setOption() instead
-     * @param {object|function} info
-     */
-    this.setSignatureInfo = function(info) {
-        self.setOption('signatureInfo', info);
     };
 
     /**
