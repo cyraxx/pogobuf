@@ -106,7 +106,7 @@ function Client(options) {
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
         signatureVersion += '.' + (+self.options.version % 100);
 
-        Signature.register(self, self.options.deviceId);
+        Signature.signature.register(self, self.options.deviceId);
 
         self.signatureBuilder = new Signature.encryption.Builder({
             protos: POGOProtos,
