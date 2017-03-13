@@ -31,7 +31,7 @@
     "bluebird": "^3.4.7",
     "bluebird-retry": "^0.10.1",
     "bytebuffer": "^5.0.1",
-    "gpsoauthnode": "0.0.5",
+    "gpsoauth": "^1.0.0",
     "long": "^3.2.0",
     "node-pogo-protos": "^2.7.0",
     "pogobuf-signature": "^1.0.0",

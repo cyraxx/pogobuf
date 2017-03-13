@@ -1,6 +1,6 @@
 'use strict';
 
-const GoogleOAuth = require('gpsoauthnode');
+const GoogleOAuth = require('gpsoauth');
 const google = new GoogleOAuth();
 
 /**
@@ -22,6 +22,14 @@ function GoogleLogin() {
         'audience:server:client_id:848232511240-7so421jotr2609rmqakceuu1luuq0ptb.apps.googleusercontent.com';
     const GOOGLE_LOGIN_APP = 'com.nianticlabs.pokemongo';
     const GOOGLE_LOGIN_CLIENT_SIG = '321187995bc7cdc2b5fc91b11a96e2baa8602c62';
+
+    /**
+     * Sets a proxy address to use for logins.
+     * @param {string} proxy
+     */
+    this.setProxy = function(proxy) {
+        google.setProxy(proxy);
+    };
 
     /**
      * Performs the Google Login using Android Device and returns a Promise that will be resolved
