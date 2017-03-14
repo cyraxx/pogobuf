@@ -11,8 +11,6 @@ const EventEmitter = require('events').EventEmitter,
 
 const Lehmer = Utils.Random;
 
-Promise.promisifyAll(request);
-
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     PlatformRequestType = POGOProtos.Networking.Platform.PlatformRequestType,
     PlatformRequestMessages = POGOProtos.Networking.Platform.Requests,
@@ -1297,21 +1295,10 @@ function Client(options) {
             self.setOption('hashingServer', self.options.hashingServer + '/');
         }
 
-        return request.getAsync(self.options.hashingServer + 'api/hash/versions').then(response => {
-            const versions = JSON.parse(response.body);
-            if (!versions) throw new Error('Invalid initial response from hashing server');
-
-            let iosVersion = '1.' + ((+self.options.version - 3000) / 100).toFixed(0);
-            iosVersion += '.' + (+self.options.version % 100);
-
-            self.hashingVersion = versions[iosVersion];
-
-            if (!self.hashingVersion) {
-                throw new Error('Unsupported version for hashserver: ' + self.options.version + '/' + iosVersion);
-            }
-
-            return true;
-        });
+        return Signature.versions.getHashingEndpoint(self.options.hashingServer, self.options.version)
+                .then(version => {
+                    self.hashingVersion = version;
+                });
     };
 
     /*
