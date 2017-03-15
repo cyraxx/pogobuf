@@ -1177,7 +1177,8 @@ function Client(options) {
 
                     if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
-                    if (self.endpoint === INITIAL_ENDPOINT || responseEnvelope.status_code === 53) {
+                    if (responseEnvelope.status_code === 53 ||
+                        (self.endpoint === INITIAL_ENDPOINT && responseEnvelope.status_code === 2)) {
                         self.redirect(requests, signedEnvelope, responseEnvelope, resolve, reject);
                         return;
                     }
