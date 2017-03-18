@@ -3,15 +3,13 @@
 const EventEmitter = require('events').EventEmitter,
     Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
-    pogoSignature = require('node-pogo-signature'),
+    Signature = require('pogobuf-signature'),
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
     Utils = require('./pogobuf.utils.js');
 
 const Lehmer = Utils.Random;
-
-Promise.promisifyAll(request);
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     PlatformRequestType = POGOProtos.Networking.Platform.PlatformRequestType,
@@ -35,10 +33,10 @@ const defaultOptions = {
     automaticLongConversion: true,
     includeRequestTypeInResponse: false,
     version: 4500,
-    signatureInfo: {},
     useHashingServer: false,
     hashingServer: 'http://hashing.pogodev.io/',
-    hashingKey: null
+    hashingKey: null,
+    deviceId: null,
 };
 
 /**
@@ -102,13 +100,13 @@ function Client(options) {
 
         self.lastMapObjectsCall = 0;
 
-        // convert app version (5703) to client version (0.57.3)
+        // convert app version (5704) to client version (0.57.4)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
-        if ((+self.options.version % 100) !== 0) {
-            signatureVersion += '.' + (+self.options.version % 100);
-        }
+        signatureVersion += '.' + (+self.options.version % 100);
 
-        self.signatureBuilder = new pogoSignature.Builder({
+        Signature.signature.register(self, self.options.deviceId);
+
+        self.signatureBuilder = new Signature.encryption.Builder({
             protos: POGOProtos,
             version: signatureVersion,
         });
@@ -1302,21 +1300,10 @@ function Client(options) {
             self.setOption('hashingServer', self.options.hashingServer + '/');
         }
 
-        return request.getAsync(self.options.hashingServer + 'api/hash/versions').then(response => {
-            const versions = JSON.parse(response.body);
-            if (!versions) throw new Error('Invalid initial response from hashing server');
-
-            let iosVersion = '1.' + ((+self.options.version - 3000) / 100).toFixed(0);
-            iosVersion += '.' + (+self.options.version % 100);
-
-            self.hashingVersion = versions[iosVersion];
-
-            if (!self.hashingVersion) {
-                throw new Error('Unsupported version for hashserver: ' + self.options.version + '/' + iosVersion);
-            }
-
-            return true;
-        });
+        return Signature.versions.getHashingEndpoint(self.options.hashingServer, self.options.version)
+                .then(version => {
+                    self.hashingVersion = version;
+                });
     };
 
     /*
@@ -1368,15 +1355,6 @@ function Client(options) {
      */
     this.setMapObjectsThrottlingEnabled = function(enable) {
         self.setOption('mapObjectsThrottling', enable);
-    };
-
-    /**
-     * Sets the signatureInfo option.
-     * @deprecated Use options object or setOption() instead
-     * @param {object|function} info
-     */
-    this.setSignatureInfo = function(info) {
-        self.setOption('signatureInfo', info);
     };
 
     /**

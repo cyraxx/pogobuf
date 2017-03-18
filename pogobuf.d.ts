@@ -377,6 +377,12 @@ declare namespace pogobuf {
         login(username: string, password: string): Promise<string>;
 
         /**
+         * Sets a proxy address to use for logins.
+         * @param {string} proxy
+         */
+        setProxy(proxy: string): void;
+
+        /**
          * Performs the Google login by skipping the password step and starting with the Master Token instead.
          * Returns a Promise that will be resolved with the auth token.
          * @param {string} username

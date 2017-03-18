@@ -30,10 +30,11 @@
   "dependencies": {
     "bluebird": "^3.4.7",
     "bluebird-retry": "^0.10.1",
-    "gpsoauthnode": "0.0.5",
+    "bytebuffer": "^5.0.1",
+    "gpsoauth": "^1.0.0",
     "long": "^3.2.0",
     "node-pogo-protos": "^2.7.0",
-    "node-pogo-signature": "starkevin/node-pogo-signature",
+    "pogobuf-signature": "^1.0.0",
     "request": "^2.79.0",
     "s2-geometry": "^1.2.9"
   },
