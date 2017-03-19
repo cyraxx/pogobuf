@@ -99,6 +99,7 @@ function Client(options) {
         if (typeof downloadSettings !== 'undefined') self.setOption('downloadSettings', downloadSettings);
 
         self.lastMapObjectsCall = 0;
+        self.endpoint = INITIAL_ENDPOINT;
 
         // convert app version (5704) to client version (0.57.4)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
@@ -112,14 +113,6 @@ function Client(options) {
         });
         self.signatureBuilder.encryptAsync = Promise.promisify(self.signatureBuilder.encrypt,
                                                                 { context: self.signatureBuilder });
-
-        /*
-            The response to the first RPC call does not contain any response messages even though
-            the envelope includes requests, technically it wouldn't be necessary to send the
-            requests but the app does the same. The call will then automatically be resent to the
-            new API endpoint by callRPC().
-        */
-        self.endpoint = INITIAL_ENDPOINT;
 
         let promise = Promise.resolve(true);
 
@@ -1090,6 +1083,34 @@ function Client(options) {
     };
 
     /**
+     * Handle redirection to new API endpoint and resend last request to new endpoint.
+     * @private
+     * @param {Object[]} requests - Array of requests
+     * @param {RequestEnvelope} signedEnvelope - Request envelope
+     * @param {ResponseEnvelope} responseEnvelope - Result from API call
+     * @return {Promise}
+     */
+    this.redirect = function(requests, signedEnvelope, responseEnvelope) {
+        return new Promise((resolve, reject) => {
+            if (!responseEnvelope.api_url) {
+                reject(Error('Fetching RPC endpoint failed, none supplied in response'));
+                return;
+            }
+
+            self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
+
+            self.emit('endpoint-response', {
+                status_code: responseEnvelope.status_code,
+                request_id: responseEnvelope.request_id.toString(),
+                api_url: responseEnvelope.api_url
+            });
+
+            signedEnvelope.platform_requests = [];
+            resolve(self.callRPC(requests, signedEnvelope));
+        });
+    };
+
+    /**
      * Executes an RPC call with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to send
@@ -1149,30 +1170,9 @@ function Client(options) {
 
                     if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
-                    if (self.endpoint === INITIAL_ENDPOINT) {
-                        /* status_code 102 seems to be invalid auth token,
-                           could use later when caching token. */
-                        if (responseEnvelope.status_code !== 53) {
-                            reject(Error('Fetching RPC endpoint failed, received status code ' +
-                                responseEnvelope.status_code));
-                            return;
-                        }
-
-                        if (!responseEnvelope.api_url) {
-                            reject(Error('Fetching RPC endpoint failed, none supplied in response'));
-                            return;
-                        }
-
-                        self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
-
-                        self.emit('endpoint-response', {
-                            status_code: responseEnvelope.status_code,
-                            request_id: responseEnvelope.request_id.toString(),
-                            api_url: responseEnvelope.api_url
-                        });
-
-                        signedEnvelope.platform_requests = [];
-                        resolve(self.callRPC(requests, signedEnvelope));
+                    if (responseEnvelope.status_code === 53 ||
+                        (responseEnvelope.status_code === 2 && self.endpoint === INITIAL_ENDPOINT)) {
+                        resolve(self.redirect(requests, signedEnvelope, responseEnvelope));
                         return;
                     }
 
