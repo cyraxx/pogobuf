@@ -1020,13 +1020,14 @@ function Client(options) {
         }
 
         self.signatureBuilder.setAuthTicket(authTicket);
-        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         if (typeof self.options.signatureInfo === 'function') {
             self.signatureBuilder.setFields(self.options.signatureInfo(envelope));
         } else if (self.options.signatureInfo) {
             self.signatureBuilder.setFields(self.options.signatureInfo);
         }
+
+        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         return retry(() => self.signatureBuilder.encryptAsync(envelope.requests)
                         .catch(err => {
