@@ -1,5 +1,5 @@
-/*eslint no-underscore-dangle: ["error", { "allow": ["_eventId"] }]*/
 'use strict';
+/* eslint no-underscore-dangle: ["error", { "allow": ["_eventId"] }] */
 
 const request = require('request'),
     Promise = require('bluebird');
