@@ -1,4 +1,5 @@
 'use strict';
+
 /* eslint no-underscore-dangle: ["error", { "allow": ["_eventId"] }] */
 
 const request = require('request'),
