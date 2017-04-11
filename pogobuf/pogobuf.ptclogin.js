@@ -1,3 +1,4 @@
+/*eslint no-underscore-dangle: ["error", { "allow": ["_eventId"] }]*/
 'use strict';
 
 const request = require('request'),
@@ -62,6 +63,8 @@ function PTCLogin() {
             proxy: self.proxy,
         })
         .then(response => {
+            const body = response.body;
+
             if (response.statusCode !== 200) {
                 throw new Error(`Status ${response.statusCode} received from PTC login`);
             }
