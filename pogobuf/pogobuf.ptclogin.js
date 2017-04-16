@@ -111,7 +111,7 @@ function PTCLogin() {
         .then(response => {
             if (response.headers['set-cookie'] && response.headers['set-cookie'].length > 0) {
                 const cookieString = response.headers['set-cookie'].filter(c => c.startsWith('CASTGC'));
-                if (cookieString) {
+                if (cookieString && cookieString.length > 0) {
                     const cookie = request.cookie(cookieString[0]);
                     return cookie.value;
                 }
