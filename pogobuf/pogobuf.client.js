@@ -3,7 +3,7 @@
 const EventEmitter = require('events').EventEmitter,
     Long = require('long'),
     POGOProtos = require('node-pogo-protos'),
-    pogoSignature = require('node-pogo-signature'),
+    Signature = require('pogobuf-signature'),
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
@@ -12,8 +12,6 @@ const EventEmitter = require('events').EventEmitter,
     GoogleLogin = require('./pogobuf.googlelogin.js');
 
 const Lehmer = Utils.Random;
-
-Promise.promisifyAll(request);
 
 const RequestType = POGOProtos.Networking.Requests.RequestType,
     PlatformRequestType = POGOProtos.Networking.Platform.PlatformRequestType,
@@ -39,10 +37,10 @@ const defaultOptions = {
     automaticLongConversion: true,
     includeRequestTypeInResponse: false,
     version: 4500,
-    signatureInfo: {},
     useHashingServer: false,
     hashingServer: 'http://hashing.pogodev.io/',
-    hashingKey: null
+    hashingKey: null,
+    deviceId: null,
 };
 
 /**
@@ -105,27 +103,20 @@ function Client(options) {
         if (typeof downloadSettings !== 'undefined') self.setOption('downloadSettings', downloadSettings);
 
         self.lastMapObjectsCall = 0;
+        self.endpoint = INITIAL_ENDPOINT;
 
-        // convert app version (5100) to client version (0.51)
+        // convert app version (5704) to client version (0.57.4)
         let signatureVersion = '0.' + ((+self.options.version) / 100).toFixed(0);
-        if ((+self.options.version % 100) !== 0) {
-            signatureVersion += '.' + (+self.options.version % 100);
-        }
+        signatureVersion += '.' + (+self.options.version % 100);
 
-        self.signatureBuilder = new pogoSignature.Builder({
+        Signature.signature.register(self, self.options.deviceId);
+
+        self.signatureBuilder = new Signature.encryption.Builder({
             protos: POGOProtos,
             version: signatureVersion,
         });
         self.signatureBuilder.encryptAsync = Promise.promisify(self.signatureBuilder.encrypt,
                                                                 { context: self.signatureBuilder });
-
-        /*
-            The response to the first RPC call does not contain any response messages even though
-            the envelope includes requests, technically it wouldn't be necessary to send the
-            requests but the app does the same. The call will then automatically be resent to the
-            new API endpoint by callRPC().
-        */
-        self.endpoint = INITIAL_ENDPOINT;
 
         let promise = Promise.resolve(true);
 
@@ -861,7 +852,7 @@ function Client(options) {
     this.rpcId = 2;
     this.lastHashingKeyIndex = 0;
     this.firstGetMapObjects = true;
-    this.lehmer = new Lehmer(1);
+    this.lehmer = new Lehmer(16807);
     this.ptr8 = INITIAL_PTR8;
 
     /**
@@ -1057,13 +1048,14 @@ function Client(options) {
         }
 
         self.signatureBuilder.setAuthTicket(authTicket);
-        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         if (typeof self.options.signatureInfo === 'function') {
             self.signatureBuilder.setFields(self.options.signatureInfo(envelope));
         } else if (self.options.signatureInfo) {
             self.signatureBuilder.setFields(self.options.signatureInfo);
         }
+
+        self.signatureBuilder.setLocation(envelope.latitude, envelope.longitude, envelope.accuracy);
 
         return retry(() => self.signatureBuilder.encryptAsync(envelope.requests)
                         .catch(err => {
@@ -1116,6 +1108,34 @@ function Client(options) {
             interval: 300,
             backoff: 2,
             max_tries: self.options.maxTries
+        });
+    };
+
+    /**
+     * Handle redirection to new API endpoint and resend last request to new endpoint.
+     * @private
+     * @param {Object[]} requests - Array of requests
+     * @param {RequestEnvelope} signedEnvelope - Request envelope
+     * @param {ResponseEnvelope} responseEnvelope - Result from API call
+     * @return {Promise}
+     */
+    this.redirect = function(requests, signedEnvelope, responseEnvelope) {
+        return new Promise((resolve, reject) => {
+            if (!responseEnvelope.api_url) {
+                reject(Error('Fetching RPC endpoint failed, none supplied in response'));
+                return;
+            }
+
+            self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
+
+            self.emit('endpoint-response', {
+                status_code: responseEnvelope.status_code,
+                request_id: responseEnvelope.request_id.toString(),
+                api_url: responseEnvelope.api_url
+            });
+
+            signedEnvelope.platform_requests = [];
+            resolve(self.callRPC(requests, signedEnvelope));
         });
     };
 
@@ -1179,30 +1199,9 @@ function Client(options) {
 
                     if (responseEnvelope.auth_ticket) self.authTicket = responseEnvelope.auth_ticket;
 
-                    if (self.endpoint === INITIAL_ENDPOINT) {
-                        /* status_code 102 seems to be invalid auth token,
-                           could use later when caching token. */
-                        if (responseEnvelope.status_code !== 53) {
-                            reject(Error('Fetching RPC endpoint failed, received status code ' +
-                                responseEnvelope.status_code));
-                            return;
-                        }
-
-                        if (!responseEnvelope.api_url) {
-                            reject(Error('Fetching RPC endpoint failed, none supplied in response'));
-                            return;
-                        }
-
-                        self.endpoint = 'https://' + responseEnvelope.api_url + '/rpc';
-
-                        self.emit('endpoint-response', {
-                            status_code: responseEnvelope.status_code,
-                            request_id: responseEnvelope.request_id.toString(),
-                            api_url: responseEnvelope.api_url
-                        });
-
-                        signedEnvelope.platform_requests = [];
-                        resolve(self.callRPC(requests, signedEnvelope));
+                    if (responseEnvelope.status_code === 53 ||
+                        (responseEnvelope.status_code === 2 && self.endpoint === INITIAL_ENDPOINT)) {
+                        resolve(self.redirect(requests, signedEnvelope, responseEnvelope));
                         return;
                     }
 
@@ -1340,21 +1339,10 @@ function Client(options) {
             self.setOption('hashingServer', self.options.hashingServer + '/');
         }
 
-        return request.getAsync(self.options.hashingServer + 'api/hash/versions').then(response => {
-            const versions = JSON.parse(response.body);
-            if (!versions) throw new Error('Invalid initial response from hashing server');
-
-            let iosVersion = '1.' + ((+self.options.version - 3000) / 100).toFixed(0);
-            iosVersion += '.' + (+self.options.version % 100);
-
-            self.hashingVersion = versions[iosVersion];
-
-            if (!self.hashingVersion) {
-                throw new Error('Unsupported version for hashserver: ' + self.options.version + '/' + iosVersion);
-            }
-
-            return true;
-        });
+        return Signature.versions.getHashingEndpoint(self.options.hashingServer, self.options.version)
+                .then(version => {
+                    self.hashingVersion = version;
+                });
     };
 
     /*
@@ -1406,15 +1394,6 @@ function Client(options) {
      */
     this.setMapObjectsThrottlingEnabled = function(enable) {
         self.setOption('mapObjectsThrottling', enable);
-    };
-
-    /**
-     * Sets the signatureInfo option.
-     * @deprecated Use options object or setOption() instead
-     * @param {object|function} info
-     */
-    this.setSignatureInfo = function(info) {
-        self.setOption('signatureInfo', info);
     };
 
     /**

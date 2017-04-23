@@ -1,6 +1,6 @@
 'use strict';
 
-const GoogleOAuth = require('gpsoauthnode');
+const GoogleOAuth = require('gpsoauth');
 const google = new GoogleOAuth();
 
 /**
@@ -27,6 +27,14 @@ function GoogleLogin() {
      * Reset login so it can be reused
      */
     this.reset = function() { };
+
+    /**
+     * Sets a proxy address to use for logins.
+     * @param {string} proxy
+     */
+    this.setProxy = function(proxy) {
+        google.setProxy(proxy);
+    };
 
     /**
      * Performs the Google Login using Android Device and returns a Promise that will be resolved
