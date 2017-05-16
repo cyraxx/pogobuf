@@ -255,7 +255,9 @@ declare namespace pogobuf {
             pokemonIDs: string | number | Long | string[] | number[] | Long[]
         ): Promise<POGOProtos.Networking.Responses.ReleasePokemonResponse>;
 
-        setAvatar(playerAvatar): Promise<POGOProtos.Networking.Responses.SetAvatarResponse>;
+        setAvatar(
+            playerAvatar: POGOProtos.Data.Player.PlayerAvatar
+        ): Promise<POGOProtos.Networking.Responses.SetAvatarResponse>;
 
         setAvatarItemAsViewed(
             avatarTemplateIDs: string[]
