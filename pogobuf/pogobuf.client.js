@@ -714,21 +714,11 @@ function Client(options) {
         });
     };
 
-    this.setAvatar = function(skin, hair, shirt, pants, hat, shoes, avatar, eyes, backpack) {
+    this.setAvatar = function(playerAvatar) {
         return self.callOrChain({
             type: RequestType.SET_AVATAR,
             message: new RequestMessages.SetAvatarMessage({
-                player_avatar: {
-                    skin: skin,
-                    hair: hair,
-                    shirt: shirt,
-                    pants: pants,
-                    hat: hat,
-                    shoes: shoes,
-                    avatar: avatar,
-                    eyes: eyes,
-                    backpack: backpack
-                }
+                player_avatar: playerAvatar
             }),
             responseType: Responses.SetAvatarResponse
         });
