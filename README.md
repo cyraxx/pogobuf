@@ -5,6 +5,8 @@
 ![license](https://img.shields.io/npm/l/pogobuf.svg)
 [![slack](https://pogobufslack.herokuapp.com/badge.svg)](https://pogobufslack.herokuapp.com/)
 
+## :warning: THIS REPOSITORY IS NO LONGER UNDER ACTIVE MAINTENANCE. FOR FURTHER DEVELOPMENT PLEASE SEE THE [POGOSANDBOX FORK](https://github.com/pogosandbox/pogobuf). :warning:
+
 ## Features
 * Implements all known Pokémon Go API calls
 * Includes native request signing (up to API version 0.45) and [hashing server support](https://github.com/cyraxx/pogobuf/wiki/Using-a-hashing-server) (API version 0.51 and up)
