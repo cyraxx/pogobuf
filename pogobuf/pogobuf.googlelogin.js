@@ -24,6 +24,11 @@ function GoogleLogin() {
     const GOOGLE_LOGIN_CLIENT_SIG = '321187995bc7cdc2b5fc91b11a96e2baa8602c62';
 
     /**
+     * Reset login so it can be reused
+     */
+    this.reset = function() { };
+
+    /**
      * Sets a proxy address to use for logins.
      * @param {string} proxy
      */

@@ -7,7 +7,9 @@ const EventEmitter = require('events').EventEmitter,
     Promise = require('bluebird'),
     request = require('request'),
     retry = require('bluebird-retry'),
-    Utils = require('./pogobuf.utils.js');
+    Utils = require('./pogobuf.utils.js'),
+    PTCLogin = require('./pogobuf.ptclogin.js'),
+    GoogleLogin = require('./pogobuf.googlelogin.js');
 
 const Lehmer = Utils.Random;
 
@@ -23,8 +25,10 @@ const INITIAL_PTR8 = '90f6a704505bccac73cec99b07794993e6fd5a12';
 
 // See pogobuf wiki for description of options
 const defaultOptions = {
-    authToken: '',
     authType: 'ptc',
+    authToken: null,
+    username: null,
+    password: null,
     downloadSettings: true,
     mapObjectsThrottling: true,
     mapObjectsMinDelay: 5000,
@@ -115,6 +119,27 @@ function Client(options) {
                                                                 { context: self.signatureBuilder });
 
         let promise = Promise.resolve(true);
+
+        // Handle login here if no auth token is provided
+        if (!self.options.authToken) {
+            if (!self.options.username || !self.options.password) throw new Error('No token nor credentials provided.');
+
+            if (self.options.authType === 'ptc') {
+                self.login = new PTCLogin();
+            } else if (self.options.authType === 'google') {
+                self.login = new GoogleLogin();
+            } else {
+                throw new Error('Invalid auth type provided.');
+            }
+
+            if (self.options.proxy) self.login.setProxy(self.options.proxy);
+
+            promise = promise
+                .then(() => self.login.login(self.options.username, self.options.password)
+                .then(token => {
+                    self.options.authToken = token;
+                }));
+        }
 
         if (self.options.useHashingServer) {
             promise = promise.then(self.initializeHashingServer);
@@ -851,6 +876,26 @@ function Client(options) {
     };
 
     /**
+     * Generate auth_info object from authToken
+     * @private
+     * @return {object} auth_info to use in envelope
+     */
+    this.getAuthInfoObject = function() {
+        let unknown2 = 0;
+        if (self.options.authType === 'ptc') {
+            const values = [2, 8, 21, 21, 21, 28, 37, 56, 59, 59, 59];
+            unknown2 = values[Math.floor(values.length * Math.random())];
+        }
+        return {
+            provider: self.options.authType,
+            token: {
+                contents: self.options.authToken,
+                unknown2: unknown2,
+            }
+        };
+    };
+
+    /**
      * Creates an RPC envelope with the given list of requests.
      * @private
      * @param {Object[]} requests - Array of requests to build
@@ -878,18 +923,7 @@ function Client(options) {
         } else if (!self.options.authType || !self.options.authToken) {
             throw Error('No auth info provided');
         } else {
-            let unknown2 = 0;
-            if (self.options.authType === 'ptc') {
-                const values = [2, 8, 21, 21, 21, 28, 37, 56, 59, 59, 59];
-                unknown2 = values[Math.floor(values.length * Math.random())];
-            }
-            envelopeData.auth_info = {
-                provider: self.options.authType,
-                token: {
-                    contents: self.options.authToken,
-                    unknown2: unknown2,
-                }
-            };
+            envelopeData.auth_info = this.getAuthInfoObject();
         }
 
         if (requests) {
@@ -1173,6 +1207,22 @@ function Client(options) {
                             if (ptr8) self.ptr8 = ptr8.message;
                         }
                     });
+
+                    /* Auth expired, auto relogin */
+                    if (responseEnvelope.status_code === 102 && self.login) {
+                        signedEnvelope.platform_requests = [];
+                        self.login.reset();
+                        self.login
+                            .login(self.options.username, self.options.password)
+                            .then(token => {
+                                self.options.authToken = token;
+                                self.authTicket = null;
+                                signedEnvelope.auth_ticket = null;
+                                signedEnvelope.auth_info = this.getAuthInfoObject();
+                                resolve(self.callRPC(requests, signedEnvelope));
+                            });
+                        return;
+                    }
 
                     /* Throttling, retry same request later */
                     if (responseEnvelope.status_code === 52) {
