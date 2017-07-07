@@ -25,7 +25,7 @@ const INITIAL_PTR8 = '90f6a704505bccac73cec99b07794993e6fd5a12';
 const defaultOptions = {
     authToken: '',
     authType: 'ptc',
-    downloadSettings: true,
+    appSimulation: true,
     mapObjectsThrottling: true,
     mapObjectsMinDelay: 5000,
     proxy: null,
@@ -90,13 +90,13 @@ function Client(options) {
     };
 
     /**
-     * Performs client initialization and downloads needed settings from the API and hashing server.
-     * @param {boolean} [downloadSettings] - Deprecated, use downloadSettings option instead
+     * Performs client initialization and do a proper api init call.
+     * @param {boolean} [appSimulation] - Deprecated, use appSimulation option instead
      * @return {Promise} promise
      */
-    this.init = function(downloadSettings) {
+    this.init = function(appSimulation) {
         // For backwards compatibility only
-        if (typeof downloadSettings !== 'undefined') self.setOption('downloadSettings', downloadSettings);
+        if (typeof appSimulation !== 'undefined') self.setOption('appSimulation', appSimulation);
 
         self.lastMapObjectsCall = 0;
         self.endpoint = INITIAL_ENDPOINT;
@@ -120,8 +120,20 @@ function Client(options) {
             promise = promise.then(self.initializeHashingServer);
         }
 
-        if (self.options.downloadSettings) {
-            promise = promise.then(() => self.downloadSettings()).then(self.processSettingsResponse);
+        if (self.options.appSimulation) {
+            const ios = POGOProtos.Enums.Platform.IOS;
+            const version = +self.options.version;
+            promise = promise.then(() => self.batchStart().batchCall())
+                        .then(() => self.getPlayer('US', 'en', 'Europe/Paris'))
+                        .then(() => self.batchStart()
+                                        .downloadRemoteConfigVersion(ios, '', '', '', version)
+                                        .checkChallenge()
+                                        .getHatchedEggs()
+                                        .getInventory()
+                                        .checkAwardedBadges()
+                                        .downloadSettings()
+                                        .batchCall())
+                        .then(self.processInitialResponse);
         }
 
         return promise;
@@ -1254,23 +1266,26 @@ function Client(options) {
     };
 
     /**
-     * Processes the data received from the downloadSettings API call during init().
+     * Processes the data received from the initial API call during init().
      * @private
-     * @param {Object} settingsResponse - Response from API call
-     * @return {Object} response - Unomdified response (to send back to Promise)
+     * @param {Object} responses - Response from API call
+     * @return {Object} responses - Unomdified response (to send back to Promise)
      */
-    this.processSettingsResponse = function(settingsResponse) {
+    this.processInitialResponse = function(responses) {
         // Extract the minimum delay of getMapObjects()
-        if (settingsResponse &&
-            !settingsResponse.error &&
-            settingsResponse.settings &&
-            settingsResponse.settings.map_settings &&
-            settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
-        ) {
-            self.setOption('mapObjectsMinDelay',
-                settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000);
+        if (responses.length >= 5) {
+            const settingsResponse = responses[5];
+            if (settingsResponse &&
+                !settingsResponse.error &&
+                settingsResponse.settings &&
+                settingsResponse.settings.map_settings &&
+                settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds
+            ) {
+                self.setOption('mapObjectsMinDelay',
+                    settingsResponse.settings.map_settings.get_map_objects_min_refresh_seconds * 1000);
+            }
         }
-        return settingsResponse;
+        return responses;
     };
 
     /**
